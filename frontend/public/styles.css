@@ -105,9 +105,27 @@ strong, b {
     margin-right: auto; 
 }
 
-.hero-cta {
+.hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
     animation: slideInUp 1s ease-out 0.8s both;
+}
+
+.hero-cta {
     width: auto !important;
+}
+
+.hero-cta-secondary {
+    background: rgba(255,255,255,0.15) !important;
+    border: 2px solid rgba(255,255,255,0.3) !important;
+    color: #fff !important;
+}
+
+.hero-cta-secondary:hover {
+    background: rgba(255,255,255,0.25) !important;
+    color: #fff !important;
 }
 
 /* Carousel Section */
