@@ -425,27 +425,8 @@
     <section class="carousel-section">
         <div class="container">
             <div class="carousel-container">
-                <div class="carousel-wrapper">
-                    <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/5f2cc82c5_WhatsAppImage2025-08-21at120950.jpg" alt="תמונה 1" class="carousel-image active">
-                    <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/49b0eaeb7_WhatsAppImage2025-08-21at120955.jpg" alt="תמונה 2" class="carousel-image">
-                    <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/415c3261c_WhatsAppImage2025-08-21at121006.jpeg" alt="תמונה 3" class="carousel-image">
-                    <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/a00e7ce85_WhatsAppImage2025-08-21at121016.jpg" alt="תמונה 4" class="carousel-image">
-                    <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/342b3000e_WhatsAppImage2025-08-21at121029.jpg" alt="תמונה 5" class="carousel-image">
-                    
-                    <button class="carousel-nav prev" onclick="prevImage()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </button>
-                    <button class="carousel-nav next" onclick="nextImage()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    </button>
-                    
-                    <div class="carousel-indicators">
-                        <div class="carousel-indicator active" onclick="goToImage(0)"></div>
-                        <div class="carousel-indicator" onclick="goToImage(1)"></div>
-                        <div class="carousel-indicator" onclick="goToImage(2)"></div>
-                        <div class="carousel-indicator" onclick="goToImage(3)"></div>
-                        <div class="carousel-indicator" onclick="goToImage(4)"></div>
-                    </div>
+                <div class="carousel-wrapper" id="carouselWrapper">
+                    <p style="color:#888;text-align:center;padding:200px 20px">טוען תמונות...</p>
                 </div>
             </div>
         </div>
@@ -486,25 +467,8 @@
     <section class="section">
         <div class="container">
             <h2>שאלות נפוצות</h2>
-            <div class="faq-list">
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">היכן ניתן לממש את השובר?</div>
-                    <div class="faq-answer">
-                        <p>השובר ניתן למימוש גם במשתלת "שפת המדבר" וגם בעגלת הקפה "גיתיתה", לבחירתכם המלאה.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">מה תוקף השובר?</div>
-                    <div class="faq-answer">
-                        <p>השובר תקף למשך 12 חודשים מלאים מיום הרכישה.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">איך מקבלים את השובר לאחר הרכישה?</div>
-                    <div class="faq-answer">
-                        <p>לאחר התשלום, השובר הדיגיטלי יהיה זמין להורדה ישירות מהאתר, וגם יישלח אליכם למייל.</p>
-                    </div>
-                </div>
+            <div class="faq-list" id="faqList">
+                <p style="color:#888;text-align:center">טוען...</p>
             </div>
         </div>
     </section>
@@ -540,20 +504,55 @@
     <script>
         // Carousel
         let currentImage = 0;
-        const images = document.querySelectorAll('.carousel-image');
-        const indicators = document.querySelectorAll('.carousel-indicator');
+        let carouselImages = [];
+        let carouselInterval = null;
         
         function showImage(index) {
+            const images = document.querySelectorAll('.carousel-image');
+            const indicators = document.querySelectorAll('.carousel-indicator');
             images.forEach((img, i) => img.classList.toggle('active', i === index));
             indicators.forEach((ind, i) => ind.classList.toggle('active', i === index));
             currentImage = index;
         }
         
-        function nextImage() { showImage((currentImage + 1) % images.length); }
-        function prevImage() { showImage((currentImage - 1 + images.length) % images.length); }
+        function nextImage() { 
+            if (carouselImages.length > 0) {
+                showImage((currentImage + 1) % carouselImages.length); 
+            }
+        }
+        function prevImage() { 
+            if (carouselImages.length > 0) {
+                showImage((currentImage - 1 + carouselImages.length) % carouselImages.length); 
+            }
+        }
         function goToImage(index) { showImage(index); }
         
-        setInterval(nextImage, 5000);
+        function renderCarousel(images) {
+            const wrapper = document.getElementById('carouselWrapper');
+            if (!images || images.length === 0) {
+                wrapper.innerHTML = '<p style="color:#888;text-align:center;padding:200px 20px">אין תמונות</p>';
+                return;
+            }
+            
+            carouselImages = images;
+            
+            wrapper.innerHTML = `
+                ${images.map((img, i) => `<img src="${img.url}" alt="${img.alt || ''}" class="carousel-image ${i === 0 ? 'active' : ''}">`).join('')}
+                <button class="carousel-nav prev" onclick="prevImage()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+                <button class="carousel-nav next" onclick="nextImage()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="carousel-indicators">
+                    ${images.map((_, i) => `<div class="carousel-indicator ${i === 0 ? 'active' : ''}" onclick="goToImage(${i})"></div>`).join('')}
+                </div>
+            `;
+            
+            // Start auto rotation
+            if (carouselInterval) clearInterval(carouselInterval);
+            carouselInterval = setInterval(nextImage, 5000);
+        }
         
         // FAQ
         function toggleFaq(element) {
@@ -566,6 +565,35 @@
             if (!isActive) {
                 element.classList.add('active');
                 answer.style.maxHeight = answer.scrollHeight + 'px';
+            }
+        }
+        
+        function renderFaq(items) {
+            const list = document.getElementById('faqList');
+            if (!items || items.length === 0) {
+                list.innerHTML = '<p style="color:#888;text-align:center">אין שאלות נפוצות</p>';
+                return;
+            }
+            
+            list.innerHTML = items.map(item => `
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">${item.question}</div>
+                    <div class="faq-answer">
+                        <p>${item.answer}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Load site settings (carousel, FAQ)
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings/public');
+                const settings = await res.json();
+                renderCarousel(settings.carousel_images || []);
+                renderFaq(settings.faq_items || []);
+            } catch (error) {
+                console.error('Error loading settings:', error);
             }
         }
         
@@ -604,7 +632,8 @@
             window.location.href = '/payment';
         }
         
-        // Load products on page load
+        // Load on page load
+        loadSettings();
         loadProducts();
     </script>
 </body>

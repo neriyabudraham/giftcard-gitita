@@ -93,6 +93,29 @@ INSERT INTO users (email, name, role, is_active, password_created)
 VALUES ('office@neriyabudraham.co.il', 'מנהל ראשי', 'admin', true, false)
 ON CONFLICT (email) DO NOTHING;
 
+-- Site settings table (for carousel, FAQ, etc.)
+CREATE TABLE IF NOT EXISTS site_settings (
+    id SERIAL PRIMARY KEY,
+    setting_key VARCHAR(100) UNIQUE NOT NULL,
+    setting_value JSONB NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default carousel images
+INSERT INTO site_settings (setting_key, setting_value) VALUES
+('carousel_images', '[
+    {"url": "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dbef79067_WhatsAppImage2025-09-01at214813.jpg", "alt": "קפה ומאפה"},
+    {"url": "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/e5807747d_WhatsAppImage2025-09-01at215020.jpg", "alt": "ארוחת בוקר"},
+    {"url": "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/abe928931_WhatsAppImage2025-09-01at220738.jpg", "alt": "שובר מתנה"}
+]'::jsonb),
+('faq_items', '[
+    {"question": "מה כולל שובר המתנה?", "answer": "שובר המתנה ניתן למימוש בעגלת הקפה לכל סוגי המשקאות והמאפים, או לרכישת צמחים ועציצים במשתלה. השובר תקף לשנה מיום הרכישה."},
+    {"question": "איך מממשים את השובר?", "answer": "פשוט מאוד! מגיעים לשפת המדבר, מציגים את השובר (דיגיטלי או מודפס) ונהנים. אפשר לממש בפעם אחת או בכמה פעמים עד גמר הסכום."},
+    {"question": "האם אפשר לשלוח את השובר במתנה?", "answer": "בהחלט! בתהליך הרכישה תוכלו להוסיף ברכה אישית ולשלוח את השובר ישירות למקבל המתנה במייל או להוריד ולשלוח בעצמכם."},
+    {"question": "מה קורה אם השובר לא נוצל במלואו?", "answer": "היתרה נשמרת! אפשר להשתמש בשובר מספר פעמים עד גמר הסכום. תוכלו תמיד לבדוק את היתרה באתר."}
+]'::jsonb)
+ON CONFLICT (setting_key) DO NOTHING;
+
 -- Products table
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,

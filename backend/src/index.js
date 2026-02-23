@@ -10,6 +10,7 @@ const purchaseRoutes = require('./routes/purchase.routes');
 const voucherRoutes = require('./routes/voucher.routes');
 const productsRoutes = require('./routes/products.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const settingsRoutes = require('./routes/settings.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -61,6 +62,7 @@ app.use('/purchases', purchaseRoutes);
 app.use('/voucher', voucherRoutes);
 app.use('/products', productsRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/settings', settingsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

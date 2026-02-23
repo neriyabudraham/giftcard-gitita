@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הגדרות אתר - מערכת שוברים</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Assistant', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #f0f0f0;
+        }
+        .navbar {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .navbar h1 { color: #FFD700; font-size: 1.5rem; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a {
+            color: #ddd;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            background: rgba(255,215,0,0.2);
+            color: #FFD700;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .section-header h2 { color: #FFD700; font-size: 1.4rem; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #1a1a1a;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,215,0,0.4); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-danger { background: rgba(220,53,69,0.8); color: #fff; }
+        .btn-small { padding: 8px 14px; font-size: 0.9rem; }
+        
+        /* Carousel Images */
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .image-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            background: rgba(0,0,0,0.3);
+        }
+        .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-card .actions {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            gap: 5px;
+        }
+        .image-card .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .image-card .btn-icon:hover { background: rgba(0,0,0,0.9); }
+        .image-card .btn-icon.delete:hover { background: rgba(220,53,69,0.9); }
+        
+        /* FAQ Items */
+        .faq-list { display: flex; flex-direction: column; gap: 15px; }
+        .faq-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .faq-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+        .faq-question {
+            font-weight: 600;
+            color: #FFD700;
+            font-size: 1.1rem;
+        }
+        .faq-answer { color: #ccc; line-height: 1.6; }
+        .faq-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-header h3 { font-size: 1.4rem; color: #FFD700; }
+        .close-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .modal-body { padding: 25px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ddd;
+            font-weight: 500;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+        }
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+        .form-textarea { min-height: 120px; resize: vertical; }
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+        .hidden { display: none !important; }
+        .saving { opacity: 0.6; pointer-events: none; }
+        .save-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #22c55e;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+            box-shadow: 0 5px 20px rgba(34,197,94,0.4);
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>🎁 מערכת שוברים</h1>
+        <div class="nav-links">
+            <a href="/admin/">שוברים</a>
+            <a href="/admin/products">מוצרים</a>
+            <a href="/admin/settings" class="active">הגדרות אתר</a>
+            <a href="/admin/users">משתמשים</a>
+            <a href="/" target="_blank">לאתר</a>
+            <a href="#" onclick="logout()">יציאה</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Carousel Images Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>🖼️ תמונות קרוסלה</h2>
+                <button class="btn btn-primary btn-small" onclick="openImageModal()">+ הוסף תמונה</button>
+            </div>
+            <div class="images-grid" id="imagesGrid">
+                <p style="color:#888">טוען...</p>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>❓ שאלות ותשובות</h2>
+                <button class="btn btn-primary btn-small" onclick="openFaqModal()">+ הוסף שאלה</button>
+            </div>
+            <div class="faq-list" id="faqList">
+                <p style="color:#888">טוען...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Image Modal -->
+    <div class="modal-overlay hidden" id="imageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="imageModalTitle">הוספת תמונה</h3>
+                <button class="close-btn" onclick="closeImageModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>קישור לתמונה *</label>
+                    <input type="url" class="form-input" id="imageUrl" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>תיאור (alt)</label>
+                    <input type="text" class="form-input" id="imageAlt" placeholder="תיאור התמונה">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImageModal()">ביטול</button>
+                <button class="btn btn-primary" onclick="saveImage()">שמור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit FAQ Modal -->
+    <div class="modal-overlay hidden" id="faqModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="faqModalTitle">הוספת שאלה</h3>
+                <button class="close-btn" onclick="closeFaqModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="faqIndex">
+                <div class="form-group">
+                    <label>שאלה *</label>
+                    <input type="text" class="form-input" id="faqQuestion" placeholder="מהי השאלה?">
+                </div>
+                <div class="form-group">
+                    <label>תשובה *</label>
+                    <textarea class="form-textarea" id="faqAnswer" placeholder="התשובה לשאלה..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFaqModal()">ביטול</button>
+                <button class="btn btn-primary" onclick="saveFaq()">שמור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Indicator -->
+    <div class="save-indicator hidden" id="saveIndicator">✓ נשמר בהצלחה</div>
+
+    <script>
+        const API = '/api';
+        let carouselImages = [];
+        let faqItems = [];
+
+        // Check auth
+        checkAuth();
+
+        async function checkAuth() {
+            try {
+                const res = await fetch(`${API}/auth/me`, { credentials: 'include' });
+                if (!res.ok) {
+                    window.location.href = '/admin/login';
+                } else {
+                    loadSettings();
+                }
+            } catch {
+                window.location.href = '/admin/login';
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const res = await fetch(`${API}/settings`, { credentials: 'include' });
+                const settings = await res.json();
+                
+                carouselImages = settings.carousel_images || [];
+                faqItems = settings.faq_items || [];
+                
+                renderImages();
+                renderFaq();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        // Carousel Images
+        function renderImages() {
+            const grid = document.getElementById('imagesGrid');
+            if (carouselImages.length === 0) {
+                grid.innerHTML = '<p style="color:#888">אין תמונות. לחץ על "הוסף תמונה" להוספת תמונה חדשה.</p>';
+                return;
+            }
+            
+            grid.innerHTML = carouselImages.map((img, i) => `
+                <div class="image-card">
+                    <img src="${img.url}" alt="${img.alt || ''}" onerror="this.src='https://via.placeholder.com/400x225?text=Error'">
+                    <div class="actions">
+                        <button class="btn-icon delete" onclick="deleteImage(${i})" title="מחק">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openImageModal() {
+            document.getElementById('imageModalTitle').textContent = 'הוספת תמונה';
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('imageAlt').value = '';
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        async function saveImage() {
+            const url = document.getElementById('imageUrl').value.trim();
+            const alt = document.getElementById('imageAlt').value.trim();
+            
+            if (!url) {
+                alert('נא להזין קישור לתמונה');
+                return;
+            }
+            
+            carouselImages.push({ url, alt });
+            await saveCarouselImages();
+            closeImageModal();
+            renderImages();
+        }
+
+        async function deleteImage(index) {
+            if (!confirm('למחוק את התמונה?')) return;
+            carouselImages.splice(index, 1);
+            await saveCarouselImages();
+            renderImages();
+        }
+
+        async function saveCarouselImages() {
+            try {
+                await fetch(`${API}/settings/carousel_images`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ value: carouselImages })
+                });
+                showSaveIndicator();
+            } catch (error) {
+                alert('שגיאה בשמירה');
+            }
+        }
+
+        // FAQ Items
+        function renderFaq() {
+            const list = document.getElementById('faqList');
+            if (faqItems.length === 0) {
+                list.innerHTML = '<p style="color:#888">אין שאלות. לחץ על "הוסף שאלה" להוספת שאלה חדשה.</p>';
+                return;
+            }
+            
+            list.innerHTML = faqItems.map((item, i) => `
+                <div class="faq-item">
+                    <div class="faq-item-header">
+                        <div class="faq-question">${item.question}</div>
+                        <div class="faq-actions">
+                            <button class="btn btn-secondary btn-small" onclick="editFaq(${i})">עריכה</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteFaq(${i})">מחיקה</button>
+                        </div>
+                    </div>
+                    <div class="faq-answer">${item.answer}</div>
+                </div>
+            `).join('');
+        }
+
+        function openFaqModal() {
+            document.getElementById('faqModalTitle').textContent = 'הוספת שאלה';
+            document.getElementById('faqIndex').value = '';
+            document.getElementById('faqQuestion').value = '';
+            document.getElementById('faqAnswer').value = '';
+            document.getElementById('faqModal').classList.remove('hidden');
+        }
+
+        function editFaq(index) {
+            const item = faqItems[index];
+            document.getElementById('faqModalTitle').textContent = 'עריכת שאלה';
+            document.getElementById('faqIndex').value = index;
+            document.getElementById('faqQuestion').value = item.question;
+            document.getElementById('faqAnswer').value = item.answer;
+            document.getElementById('faqModal').classList.remove('hidden');
+        }
+
+        function closeFaqModal() {
+            document.getElementById('faqModal').classList.add('hidden');
+        }
+
+        async function saveFaq() {
+            const index = document.getElementById('faqIndex').value;
+            const question = document.getElementById('faqQuestion').value.trim();
+            const answer = document.getElementById('faqAnswer').value.trim();
+            
+            if (!question || !answer) {
+                alert('נא למלא שאלה ותשובה');
+                return;
+            }
+            
+            if (index !== '') {
+                faqItems[parseInt(index)] = { question, answer };
+            } else {
+                faqItems.push({ question, answer });
+            }
+            
+            await saveFaqItems();
+            closeFaqModal();
+            renderFaq();
+        }
+
+        async function deleteFaq(index) {
+            if (!confirm('למחוק את השאלה?')) return;
+            faqItems.splice(index, 1);
+            await saveFaqItems();
+            renderFaq();
+        }
+
+        async function saveFaqItems() {
+            try {
+                await fetch(`${API}/settings/faq_items`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ value: faqItems })
+                });
+                showSaveIndicator();
+            } catch (error) {
+                alert('שגיאה בשמירה');
+            }
+        }
+
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.remove('hidden');
+            setTimeout(() => indicator.classList.add('hidden'), 2000);
+        }
+
+        function logout() {
+            fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' })
+                .finally(() => window.location.href = '/admin/login');
+        }
+    </script>
+</body>
+</html>

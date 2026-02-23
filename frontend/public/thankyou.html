@@ -380,11 +380,11 @@
         async function downloadVoucher() {
             const btn = document.getElementById('downloadBtn');
             btn.disabled = true;
-            btn.innerHTML = '<span>מוריד...</span>';
+            btn.innerHTML = '<span>מכין את השובר...</span>';
             
             try {
-                // Try to get image
-                const imageUrl = `/api/voucher/${voucherNumber}/image`;
+                // Use generate endpoint - it will create the image if needed
+                const imageUrl = `/api/voucher/${voucherNumber}/generate`;
                 const response = await fetch(imageUrl);
                 
                 if (response.ok) {
@@ -398,8 +398,8 @@
                     window.URL.revokeObjectURL(url);
                     a.remove();
                 } else {
-                    // Image not ready yet, show message
-                    alert('תמונת השובר עדיין בהכנה. היא תישלח אליך במייל בקרוב.');
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(errorData.message || 'שגיאה ביצירת השובר. נסה שוב.');
                 }
             } catch (error) {
                 console.error('Download error:', error);
