@@ -167,22 +167,26 @@ router.post('/webhook', async (req, res) => {
     try {
         // Log raw incoming data for debugging
         console.log('=== WEBHOOK RAW BODY ===');
-        console.log(JSON.stringify(req.body, null, 2).substring(0, 2000));
+        console.log(JSON.stringify(req.body, null, 2).substring(0, 3000));
         console.log('========================');
 
-        let html = '';
+        let textContent = '';
         let payerPhone = '';
         let payerEmail = '';
         let payerName = '';
         let paymentAmount = '';
         let paymentReference = '';
 
-        // Handle array format from Make/n8n (email forwarding)
+        // Handle different formats
         if (Array.isArray(req.body) && req.body.length > 0) {
-            html = req.body[0].textHtml || req.body[0].html || '';
+            // Array format from Make/n8n
+            textContent = req.body[0].text || req.body[0].textHtml || req.body[0].html || '';
+        } else if (req.body.text) {
+            // Direct object with text field (from Make email parsing)
+            textContent = req.body.text;
         } else {
-            // Handle direct format
-            html = req.body.html || req.body.textHtml || '';
+            // Fallback to other formats
+            textContent = req.body.html || req.body.textHtml || '';
             payerPhone = req.body.phone || '';
             payerEmail = req.body.email || '';
             payerName = req.body.name || '';
@@ -190,66 +194,40 @@ router.post('/webhook', async (req, res) => {
             paymentReference = req.body.reference || '';
         }
 
-        // Parse HTML email content if provided
-        if (html) {
-            console.log('Parsing HTML content, length:', html.length);
+        // Parse text content from Grow email
+        if (textContent) {
+            console.log('Parsing text content, length:', textContent.length);
             
-            // Extract phone - multiple patterns
-            // Pattern: >0523115380< or טלפון: 0523115380
-            const phonePatterns = [
-                />(\d{10})</,                          // >0523115380<
-                />(05\d{8})</,                         // >05XXXXXXXX<
-                /טלפון:?\s*([\d\-]+)/i,               // טלפון: 052-311-5380
-                /phone[:\s]*([\d\-]+)/i,               // phone: 0523115380
-            ];
-            
-            for (const pattern of phonePatterns) {
-                const match = html.match(pattern);
-                if (match) {
-                    payerPhone = (match[1] || match[0]).replace(/[-<>]/g, '');
-                    console.log('Found phone with pattern:', pattern, '->', payerPhone);
-                    break;
-                }
+            // Extract phone - "טלפון: 0584254229"
+            const phoneMatch = textContent.match(/טלפון:?\s*(0\d{8,9})/);
+            if (phoneMatch) {
+                payerPhone = phoneMatch[1].replace(/[-\s]/g, '');
+                console.log('Found phone:', payerPhone);
             }
             
-            // Extract email - multiple patterns
-            const emailPatterns = [
-                /mailto:([^"<>\s]+@[^"<>\s]+)/i,
-                />([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})</,
-                /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/
-            ];
-            
-            for (const pattern of emailPatterns) {
-                const match = html.match(pattern);
-                if (match) {
-                    payerEmail = match[1] || match[0];
-                    // Skip grow.security emails
-                    if (!payerEmail.includes('grow.security') && !payerEmail.includes('meshulam')) {
-                        console.log('Found email with pattern:', pattern, '->', payerEmail);
-                        break;
-                    }
-                    payerEmail = '';
-                }
+            // Extract email - "מייל: neriy.nisim@gmail.com"
+            const emailMatch = textContent.match(/מייל:?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+            if (emailMatch) {
+                payerEmail = emailMatch[1];
+                console.log('Found email:', payerEmail);
             }
             
-            // Extract amount - look for payment amounts
-            const amountPatterns = [
-                /(\d{2,3})\s*(?:ש"ח|₪)/,              // 188 ש"ח or 188₪
-                /תשלום.*?(\d{2,3})\s/i,               // תשלום של 188
-                /(\d{2,3})\s*NIS/i,                    // 188 NIS
-            ];
-            
-            for (const pattern of amountPatterns) {
-                const match = html.match(pattern);
-                if (match) {
-                    paymentAmount = match[1].replace(/,/g, '');
-                    console.log('Found amount with pattern:', pattern, '->', paymentAmount);
-                    break;
-                }
+            // Extract amount - "תשלום של X ש"ח"
+            const amountMatch = textContent.match(/תשלום\s+(?:של\s+)?(\d+)\s*ש"ח/);
+            if (amountMatch) {
+                paymentAmount = amountMatch[1];
+                console.log('Found amount:', paymentAmount);
             }
             
-            // Extract reference/אסמכתא
-            const refMatch = html.match(/אסמכתא:?\s*(\d+)/i) || html.match(/(\d{9})/);
+            // Extract name - "שם:\nנריה אבודרהם" or "שם: נריה אבודרהם"
+            const nameMatch = textContent.match(/שם:?\s*\n?([^\n]+?)(?:\s+טלפון|\s*$)/);
+            if (nameMatch) {
+                payerName = nameMatch[1].trim();
+                console.log('Found name:', payerName);
+            }
+            
+            // Extract reference - "אסמכתא: 467413334"
+            const refMatch = textContent.match(/אסמכתא:?\s*(\d+)/);
             if (refMatch) {
                 paymentReference = refMatch[1];
                 console.log('Found reference:', paymentReference);
