@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
 
-const HTML2PNG_URL = process.env.HTML2PNG_URL || 'https://files2.neriyabudraham.co.il/html2png/coordinates';
+const HTML2PNG_URL = process.env.HTML2PNG_URL || 'https://html2png.botomat.co.il/html2png/coordinates';
 const VOUCHERS_DIR = path.join(__dirname, '../../vouchers');
 
 function generateVoucherHTML(data) {
