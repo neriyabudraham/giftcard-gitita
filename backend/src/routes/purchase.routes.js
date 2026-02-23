@@ -165,10 +165,15 @@ router.get('/verify/:voucherId', async (req, res) => {
 // Payment webhook - receives email content from Grow/Meshulam
 router.post('/webhook', async (req, res) => {
     try {
-        // Log raw incoming data for debugging
-        console.log('=== WEBHOOK RAW BODY ===');
-        console.log(JSON.stringify(req.body, null, 2).substring(0, 3000));
-        console.log('========================');
+        // Log EVERYTHING for debugging
+        console.log('');
+        console.log('########## WEBHOOK START ##########');
+        console.log('Body type:', typeof req.body);
+        console.log('Is array:', Array.isArray(req.body));
+        console.log('Keys:', Object.keys(req.body || {}));
+        console.log('Full body:', JSON.stringify(req.body, null, 2));
+        console.log('########## WEBHOOK END ##########');
+        console.log('');
 
         let textContent = '';
         let payerPhone = '';
