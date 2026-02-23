@@ -48,9 +48,16 @@ router.post('/', async (req, res) => {
 
         const purchaseId = result.rows[0].id;
 
-        // TODO: Generate real payment URL from payment provider
-        // For now, using a placeholder that will be replaced with actual payment integration
-        const paymentUrl = `https://www.paypal.com/checkoutnow?token=placeholder_${purchaseId}`;
+        // Meshulam payment links by amount
+        const paymentLinks = {
+            '95': 'https://meshulam.co.il/quick_payment?b=94d3052b31acdf125df594d1b61d9d06',
+            '188': 'https://meshulam.co.il/quick_payment?b=94f3afb628451a34b6868895f1cef522',
+            '100': 'https://meshulam.co.il/quick_payment?b=e5cbd287b0610688a5dc413649649a40',
+            '300': 'https://meshulam.co.il/quick_payment?b=bb441e5bf72a76ecb2be8498f7c43149',
+            '600': 'https://meshulam.co.il/quick_payment?b=7b3fdae2f87845522fd06fdd5a9c47e6'
+        };
+
+        const paymentUrl = paymentLinks[amount] || paymentLinks['100'];
 
         res.json({
             success: true,
@@ -152,30 +159,65 @@ router.get('/verify/:voucherId', async (req, res) => {
     }
 });
 
-// Payment webhook (called by payment provider)
+// Payment webhook - receives email content from Grow/Meshulam
 router.post('/webhook', async (req, res) => {
     try {
-        const { voucherId, paymentId, status } = req.body;
+        const { html, text, email, phone, amount, name, reference } = req.body;
+        
+        let payerPhone = phone;
+        let payerEmail = email;
+        let payerName = name;
+        let paymentAmount = amount;
+        let paymentReference = reference;
 
-        if (status !== 'success' && status !== 'completed') {
-            return res.json({ success: false, message: 'סטטוס תשלום לא תקין' });
+        // Parse HTML email content if provided
+        if (html) {
+            // Extract phone
+            const phoneMatch = html.match(/טלפון:\s*([\d\-]+)/);
+            if (phoneMatch) payerPhone = phoneMatch[1].replace(/-/g, '');
+            
+            // Extract email
+            const emailMatch = html.match(/mailto:([^"]+)/);
+            if (emailMatch) payerEmail = emailMatch[1];
+            
+            // Extract amount
+            const amountMatch = html.match(/תשלום של\s*([\d,]+)\s*ש"ח/);
+            if (amountMatch) paymentAmount = amountMatch[1].replace(/,/g, '');
+            
+            // Extract name
+            const nameMatch = html.match(/שם:\s*([^<]+)/);
+            if (nameMatch) payerName = nameMatch[1].trim();
+            
+            // Extract reference
+            const refMatch = html.match(/אסמכתא:\s*(\d+)/);
+            if (refMatch) paymentReference = refMatch[1];
         }
 
-        // Get purchase data
+        console.log('Webhook received:', { payerPhone, payerEmail, paymentAmount, payerName, paymentReference });
+
+        if (!payerPhone && !payerEmail) {
+            return res.status(400).json({ error: true, message: 'חסר טלפון או מייל לזיהוי' });
+        }
+
+        // Find the oldest pending purchase matching phone/email and amount
+        // Using FIFO (First In First Out) to handle multiple purchases
         const purchaseResult = await db.query(
-            'SELECT * FROM purchases WHERE voucher_number = $1 ORDER BY created_at DESC LIMIT 1',
-            [voucherId]
+            `SELECT * FROM purchases 
+             WHERE status = 'pending' 
+             AND amount = $1
+             AND (buyer_phone LIKE $2 OR buyer_email = $3)
+             ORDER BY created_at ASC 
+             LIMIT 1`,
+            [paymentAmount, `%${payerPhone ? payerPhone.slice(-9) : 'NOMATCH'}%`, payerEmail || 'NOMATCH']
         );
 
         if (purchaseResult.rows.length === 0) {
-            return res.status(404).json({ error: true, message: 'רכישה לא נמצאה' });
+            console.log('No pending purchase found for:', { payerPhone, payerEmail, paymentAmount });
+            return res.status(404).json({ error: true, message: 'רכישה ממתינה לא נמצאה' });
         }
 
         const purchase = purchaseResult.rows[0];
-
-        if (purchase.status === 'completed') {
-            return res.json({ success: true, message: 'תשלום כבר אומת' });
-        }
+        console.log('Found purchase:', purchase.id, purchase.voucher_number);
 
         // Calculate expiry date (1 year from now)
         const expiryDate = new Date();
@@ -189,7 +231,7 @@ router.post('/webhook', async (req, res) => {
              VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
              RETURNING *`,
             [
-                voucherId,
+                purchase.voucher_number,
                 purchase.amount,
                 `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
                 purchase.recipient_phone,
@@ -209,42 +251,47 @@ router.post('/webhook', async (req, res) => {
         // Update purchase status
         await db.query(
             'UPDATE purchases SET status = $1, voucher_id = $2, payment_id = $3, completed_at = NOW() WHERE id = $4',
-            ['completed', voucher.id, paymentId, purchase.id]
+            ['completed', voucher.id, paymentReference, purchase.id]
         );
 
         // Generate voucher image
         try {
             await voucherService.generateVoucherImage({
-                voucherId,
+                voucherId: purchase.voucher_number,
                 amount: purchase.amount,
                 greeting: purchase.greeting,
                 recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
                 expiryDate: expiryDate.toLocaleDateString('he-IL')
             });
 
-            // Update voucher with image URL
             await db.query(
                 'UPDATE vouchers SET voucher_image_url = $1 WHERE id = $2',
-                [`/api/voucher/${voucherId}/image`, voucher.id]
+                [`/api/voucher/${purchase.voucher_number}/image`, voucher.id]
             );
         } catch (imgError) {
             console.error('Error generating voucher image:', imgError);
         }
 
-        // Send email
+        // Send email to buyer
         try {
             await emailService.sendVoucherEmail({
                 to: purchase.buyer_email,
                 buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
-                voucherNumber: voucherId,
+                voucherNumber: purchase.voucher_number,
                 amount: purchase.amount,
-                voucherId
+                voucherId: purchase.voucher_number
             });
+            console.log('Email sent to:', purchase.buyer_email);
         } catch (emailError) {
             console.error('Error sending email:', emailError);
         }
 
-        res.json({ success: true, voucher });
+        res.json({ 
+            success: true, 
+            message: 'שובר נוצר בהצלחה',
+            voucherNumber: purchase.voucher_number,
+            purchaseId: purchase.id
+        });
 
     } catch (error) {
         console.error('Webhook error:', error);
