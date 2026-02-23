@@ -5,124 +5,419 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>רכישת שובר - שפת המדבר</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            direction: rtl;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #f0f0f0;
+            padding: 40px 20px;
+        }
+        
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+        
+        .form-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 15px;
+        }
+        
+        .amount-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #1a1a1a;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .form-subtitle {
+            color: #ccc;
+            font-size: 1.1rem;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #FFD700;
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ddd;
+            font-weight: 500;
+        }
+        
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 15px 18px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #FFD700;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: #888;
+        }
+        
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        .greeting-section {
+            background: rgba(0,0,0,0.2);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+        }
+        
+        .greeting-title {
+            font-size: 1.2rem;
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+        
+        .greeting-description {
+            color: #aaa;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-family: inherit;
+        }
+        
+        .btn-back {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-back:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #1a1a1a;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.5);
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Payment Modal */
+        .payment-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .payment-modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .payment-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .payment-modal-title {
+            font-size: 1.4rem;
+            color: #FFD700;
+        }
+        
+        .close-button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .close-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .payment-iframe-container {
+            height: 500px;
+        }
+        
+        .payment-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .payment-instructions {
+            padding: 15px 25px;
+            text-align: center;
+            color: #aaa;
+            font-size: 0.95rem;
+            background: rgba(0,0,0,0.2);
+        }
+    </style>
 </head>
 <body>
-    <div class="voucher-form-wrapper">
-        <div class="form-container">
-            <div class="form-header">
-                <h1 class="form-title">פרטים אישיים</h1>
-                <div class="amount-badge" id="amountBadge">שובר בסך ₪0</div>
-                <p class="form-subtitle">
-                    אנא מלא את הפרטים הבאים כדי להמשיך לתשלום
-                </p>
+    <div class="form-container">
+        <div class="form-header">
+            <h1 class="form-title">פרטים אישיים</h1>
+            <div class="amount-badge" id="amountBadge">שובר בסך ₪0</div>
+            <p class="form-subtitle">אנא מלאו את הפרטים הבאים כדי להמשיך לתשלום</p>
+        </div>
+
+        <form id="purchaseForm">
+            <h2 class="section-title">פרטי הרוכש</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">שם פרטי *</label>
+                    <input type="text" name="buyerFirstName" class="form-input" placeholder="הכניסו שם פרטי" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">שם משפחה *</label>
+                    <input type="text" name="buyerLastName" class="form-input" placeholder="הכניסו שם משפחה" required>
+                </div>
             </div>
 
-            <form id="purchaseForm">
-                <h2 class="section-title-form">פרטי הרוכש</h2>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">שם פרטי *</label>
-                        <input type="text" name="buyerFirstName" class="form-input" placeholder="הכנס שם פרטי" autocomplete="given-name" required>
-                        <div class="error-message" id="error-buyerFirstName"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">שם משפחה *</label>
-                        <input type="text" name="buyerLastName" class="form-input" placeholder="הכנס שם משפחה" autocomplete="family-name" required>
-                        <div class="error-message" id="error-buyerLastName"></div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">טלפון רוכש *</label>
-                        <input type="tel" name="buyerPhone" class="form-input" placeholder="050-000-0000" autocomplete="tel" required>
-                        <div class="error-message" id="error-buyerPhone"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">אימייל רוכש *</label>
-                        <input type="email" name="buyerEmail" class="form-input" placeholder="example@email.com" autocomplete="email" required>
-                        <div class="error-message" id="error-buyerEmail"></div>
-                    </div>
-                </div>
-
-                <div class="section-divider"></div>
-
-                <h2 class="section-title-form">פרטי מקבל השובר</h2>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">שם פרטי *</label>
-                        <input type="text" name="recipientFirstName" class="form-input" placeholder="הכנס שם פרטי" required>
-                        <div class="error-message" id="error-recipientFirstName"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">שם משפחה *</label>
-                        <input type="text" name="recipientLastName" class="form-input" placeholder="הכנס שם משפחה" required>
-                        <div class="error-message" id="error-recipientLastName"></div>
-                    </div>
-                </div>
-
+            <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">טלפון מקבל השובר *</label>
-                    <input type="tel" name="recipientPhone" class="form-input" placeholder="050-000-0000" required>
-                    <div class="error-message" id="error-recipientPhone"></div>
+                    <label class="form-label">טלפון *</label>
+                    <input type="tel" name="buyerPhone" class="form-input" placeholder="050-000-0000" required>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">אימייל *</label>
+                    <input type="email" name="buyerEmail" class="form-input" placeholder="example@email.com" required>
+                </div>
+            </div>
 
-                <div class="greeting-section">
-                    <h3 class="greeting-title">ברכה על השובר</h3>
-                    <p class="greeting-description">
-                        כאן תוכל להוסיף ברכה אישית שתופיע על שובר המתנה
-                    </p>
-                    <textarea name="greeting" class="form-textarea" placeholder="כתוב כאן את הברכה האישית שלך...">באהבה, מכל הלב
+            <h2 class="section-title">פרטי מקבל השובר</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">שם פרטי *</label>
+                    <input type="text" name="recipientFirstName" class="form-input" placeholder="הכניסו שם פרטי" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">שם משפחה *</label>
+                    <input type="text" name="recipientLastName" class="form-input" placeholder="הכניסו שם משפחה" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">טלפון מקבל השובר *</label>
+                <input type="tel" name="recipientPhone" class="form-input" placeholder="050-000-0000" required>
+            </div>
+
+            <div class="greeting-section">
+                <h3 class="greeting-title">ברכה על השובר</h3>
+                <p class="greeting-description">כאן תוכלו להוסיף ברכה אישית שתופיע על שובר המתנה</p>
+                <textarea name="greeting" class="form-textarea" placeholder="כתבו כאן את הברכה האישית שלכם...">באהבה, מכל הלב
 
 שיהיה רגע של פינוק, הפסקה של שלווה,
 או נגיעה קטנה של ירוק בעיניים ☕
 
-מקווים שתהנה מהשובר הזה בדיוק כמו שחשבנו עליך כשבחרנו אותו :)</textarea>
-                </div>
+מקווים שתהנו מהשובר הזה בדיוק כמו שחשבנו עליכם כשבחרנו אותו :)</textarea>
+            </div>
 
-                <div class="form-actions">
-                    <button type="button" class="btn btn-back" onclick="window.location.href='index.html'">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                        חזרה
-                    </button>
-                    
-                    <button type="submit" class="btn btn-submit" id="submitBtn">
-                        <span id="btnText">לשלב הבא</span>
-                        <span id="btnLoader" class="hidden">טוען...</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Payment Modal -->
-        <div id="paymentModal" class="payment-modal-overlay hidden">
-            <div class="payment-modal">
-                <div class="payment-modal-header">
-                    <h2 class="payment-modal-title">השלמת תשלום</h2>
-                    <button class="close-button" onclick="closePaymentModal()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-back" onclick="window.location.href='/'">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    חזרה
+                </button>
                 
-                <div class="payment-iframe-container">
-                    <iframe id="paymentIframe" class="payment-iframe" title="תשלום" allow="payment"></iframe>
-                </div>
+                <button type="submit" class="btn btn-submit" id="submitBtn">
+                    <span id="btnText">לשלב הבא</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+            </div>
+        </form>
+    </div>
 
-                <div class="payment-instructions">
-                    לאחר השלמת התשלום, יש ללחוץ על X למעלה
-                </div>
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="payment-modal-overlay hidden">
+        <div class="payment-modal">
+            <div class="payment-modal-header">
+                <h2 class="payment-modal-title">השלמת תשלום</h2>
+                <button class="close-button" onclick="closePaymentModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="payment-iframe-container">
+                <iframe id="paymentIframe" class="payment-iframe" title="תשלום" allow="payment"></iframe>
+            </div>
+            <div class="payment-instructions">
+                לאחר השלמת התשלום, יש ללחוץ על X למעלה
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
-    <script src="payment.js"></script>
+    <script>
+        const API = '/api';
+        let selectedVoucher = JSON.parse(localStorage.getItem('selectedVoucher') || '{"amount":"0","name":"שובר"}');
+        
+        document.getElementById('amountBadge').textContent = `${selectedVoucher.name} - ₪${selectedVoucher.amount}`;
+        
+        if (!selectedVoucher.amount || selectedVoucher.amount === '0') {
+            window.location.href = '/';
+        }
+        
+        document.getElementById('purchaseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            btn.disabled = true;
+            btnText.textContent = 'מעבד...';
+            
+            const formData = new FormData(e.target);
+            const data = {
+                voucherType: selectedVoucher.name,
+                amount: selectedVoucher.amount,
+                buyerFirstName: formData.get('buyerFirstName'),
+                buyerLastName: formData.get('buyerLastName'),
+                buyerPhone: formData.get('buyerPhone'),
+                buyerEmail: formData.get('buyerEmail'),
+                recipientFirstName: formData.get('recipientFirstName'),
+                recipientLastName: formData.get('recipientLastName'),
+                recipientPhone: formData.get('recipientPhone'),
+                greeting: formData.get('greeting')
+            };
+            
+            try {
+                const res = await fetch(`${API}/purchases`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                
+                if (result.success && result.paymentUrl) {
+                    localStorage.setItem('purchaseId', result.purchaseId);
+                    document.getElementById('paymentIframe').src = result.paymentUrl;
+                    document.getElementById('paymentModal').classList.remove('hidden');
+                } else {
+                    alert(result.error || 'שגיאה ביצירת ההזמנה');
+                }
+            } catch (error) {
+                alert('שגיאה בשרת');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'לשלב הבא';
+            }
+        });
+        
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            document.getElementById('paymentIframe').src = '';
+            window.location.href = '/thankyou';
+        }
+    </script>
 </body>
 </html>

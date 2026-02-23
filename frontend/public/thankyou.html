@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תודה על הרכישה - שפת המדבר</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            direction: rtl;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .thankyou-container {
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease-out;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .success-icon svg {
+            width: 60px;
+            height: 60px;
+            stroke: white;
+            stroke-width: 3;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+        
+        @keyframes fadeInUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: #ddd;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+        
+        .info-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+            animation: fadeInUp 0.6s ease-out 0.6s both;
+        }
+        
+        .info-card h3 {
+            color: #FFD700;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        .info-card p {
+            color: #bbb;
+            line-height: 1.7;
+        }
+        
+        .info-list {
+            text-align: right;
+            margin-top: 20px;
+        }
+        
+        .info-list li {
+            color: #ccc;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-list li::before {
+            content: '✓';
+            color: #22c55e;
+            font-weight: bold;
+        }
+        
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            animation: fadeInUp 0.6s ease-out 0.8s both;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #1a1a1a;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .contact-info {
+            margin-top: 40px;
+            color: #888;
+            font-size: 0.95rem;
+            animation: fadeInUp 0.6s ease-out 1s both;
+        }
+        
+        .contact-info a {
+            color: #FFD700;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="thankyou-container">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        
+        <h1>תודה רבה!</h1>
+        
+        <p class="subtitle">
+            ההזמנה שלכם התקבלה בהצלחה 🎉<br>
+            השובר ייווצר ויישלח אליכם במייל תוך דקות ספורות
+        </p>
+        
+        <div class="info-card">
+            <h3>מה קורה עכשיו?</h3>
+            <p>אחרי אישור התשלום, המערכת יוצרת את השובר המותאם אישית שלכם</p>
+            <ul class="info-list">
+                <li>השובר יישלח אליכם במייל</li>
+                <li>תוכלו להוריד אותו גם מהמייל</li>
+                <li>השובר תקף ל-12 חודשים</li>
+            </ul>
+        </div>
+        
+        <div class="actions">
+            <a href="/" class="btn btn-primary">חזרה לדף הבית</a>
+            <a href="/check" class="btn btn-secondary">בדיקת שובר קיים</a>
+        </div>
+        
+        <div class="contact-info">
+            <p>יש שאלות? צרו קשר: <a href="tel:0556822072">055-6822072</a></p>
+        </div>
+    </div>
+</body>
+</html>
