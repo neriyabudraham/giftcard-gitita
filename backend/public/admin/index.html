@@ -276,8 +276,8 @@
         </div>
         <div class="nav-links">
             <a href="/admin/" class="nav-link active">שוברים</a>
-            <a href="/admin/products.html" class="nav-link">מוצרים</a>
-            <a href="/admin/users.html" class="nav-link" id="usersLink" style="display:none">משתמשים</a>
+            <a href="/admin/products" class="nav-link">מוצרים</a>
+            <a href="/admin/users" class="nav-link" id="usersLink" style="display:none">משתמשים</a>
         </div>
         <div class="navbar-user">
             <span class="user-name" id="userName"></span>
@@ -424,7 +424,7 @@
                 }
                 
                 if (currentUser.password_reset_required) {
-                    window.location.href = '/admin/create-password.html?reset=true';
+                    window.location.href = '/admin/create-password?reset=true';
                     return;
                 }
                 
@@ -432,7 +432,7 @@
                 loadStats();
                 
             } catch (error) {
-                window.location.href = '/admin/login.html';
+                window.location.href = '/admin/login';
             }
         }
 
@@ -693,7 +693,7 @@
                     credentials: 'include'
                 });
             } catch {}
-            window.location.href = '/admin/login.html';
+            window.location.href = '/admin/login';
         }
 
         // Close modals on outside click

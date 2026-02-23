@@ -213,8 +213,8 @@
         </div>
         <div class="nav-links">
             <a href="/admin/" class="nav-link">שוברים</a>
-            <a href="/admin/products.html" class="nav-link">מוצרים</a>
-            <a href="/admin/users.html" class="nav-link active">משתמשים</a>
+            <a href="/admin/products" class="nav-link">מוצרים</a>
+            <a href="/admin/users" class="nav-link active">משתמשים</a>
         </div>
         <div class="navbar-user">
             <span class="user-name" id="userName"></span>
@@ -251,7 +251,7 @@
                 <form id="addForm">
                     <div class="form-group">
                         <label>אימייל</label>
-                        <input type="email" id="addEmail" required>
+                        <input type="text" id="addEmail" required placeholder="example@domain.com">
                     </div>
                     <div class="form-group">
                         <label>שם</label>
@@ -330,7 +330,7 @@
                 loadUsers();
                 
             } catch (error) {
-                window.location.href = '/admin/login.html';
+                window.location.href = '/admin/login';
             }
         }
 
@@ -521,7 +521,7 @@
                     credentials: 'include'
                 });
             } catch {}
-            window.location.href = '/admin/login.html';
+            window.location.href = '/admin/login';
         }
 
         // Close modals on outside click

@@ -225,14 +225,14 @@
                 if (!res.ok) {
                     if (data.needsPasswordCreation) {
                         localStorage.setItem('pendingEmail', email);
-                        window.location.href = '/admin/create-password.html';
+                        window.location.href = '/admin/create-password';
                         return;
                     }
                     throw new Error(data.message);
                 }
                 
                 if (data.user.password_reset_required) {
-                    window.location.href = '/admin/create-password.html?reset=true';
+                    window.location.href = '/admin/create-password?reset=true';
                 } else {
                     window.location.href = '/admin/';
                 }

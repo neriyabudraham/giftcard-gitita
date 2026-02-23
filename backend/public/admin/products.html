@@ -268,8 +268,8 @@
         <h1>🎁 מערכת שוברים</h1>
         <div class="nav-links">
             <a href="/admin/">שוברים</a>
-            <a href="/admin/products.html" class="active">מוצרים</a>
-            <a href="/admin/users.html">משתמשים</a>
+            <a href="/admin/products" class="active">מוצרים</a>
+            <a href="/admin/users">משתמשים</a>
             <a href="/" target="_blank">לאתר</a>
             <a href="#" onclick="logout()">יציאה</a>
         </div>
@@ -413,12 +413,12 @@
             try {
                 const res = await fetch(`${API}/auth/me`, { credentials: 'include' });
                 if (!res.ok) {
-                    window.location.href = '/admin/login.html';
+                    window.location.href = '/admin/login';
                 } else {
                     loadProducts();
                 }
             } catch {
-                window.location.href = '/admin/login.html';
+                window.location.href = '/admin/login';
             }
         }
 
@@ -674,7 +674,7 @@
         
         function logout() {
             fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' })
-                .finally(() => window.location.href = '/admin/login.html');
+                .finally(() => window.location.href = '/admin/login');
         }
     </script>
 </body>

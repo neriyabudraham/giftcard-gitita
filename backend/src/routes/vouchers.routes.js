@@ -3,8 +3,63 @@ const router = express.Router();
 const db = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 
+// Rate limiter for voucher search (anti-bot protection)
+const searchAttempts = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_ATTEMPTS = 10; // max 10 searches per minute per IP
+const BLOCK_DURATION = 5 * 60 * 1000; // 5 minutes block after exceeding
+
+function rateLimitMiddleware(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    
+    let record = searchAttempts.get(ip);
+    
+    if (!record) {
+        record = { attempts: [], blockedUntil: 0 };
+        searchAttempts.set(ip, record);
+    }
+    
+    // Check if blocked
+    if (record.blockedUntil > now) {
+        const waitSeconds = Math.ceil((record.blockedUntil - now) / 1000);
+        return res.status(429).json({ 
+            error: true, 
+            message: `יותר מדי ניסיונות. נסה שוב בעוד ${waitSeconds} שניות`,
+            retryAfter: waitSeconds
+        });
+    }
+    
+    // Clean old attempts
+    record.attempts = record.attempts.filter(t => now - t < RATE_LIMIT_WINDOW);
+    
+    // Check limit
+    if (record.attempts.length >= MAX_ATTEMPTS) {
+        record.blockedUntil = now + BLOCK_DURATION;
+        return res.status(429).json({ 
+            error: true, 
+            message: 'יותר מדי ניסיונות. נסה שוב בעוד 5 דקות',
+            retryAfter: BLOCK_DURATION / 1000
+        });
+    }
+    
+    // Record this attempt
+    record.attempts.push(now);
+    next();
+}
+
+// Cleanup old records every 10 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of searchAttempts.entries()) {
+        if (record.attempts.length === 0 && record.blockedUntil < now) {
+            searchAttempts.delete(ip);
+        }
+    }
+}, 10 * 60 * 1000);
+
 // Search voucher (public - for customer check)
-router.get('/search', async (req, res) => {
+router.get('/search', rateLimitMiddleware, async (req, res) => {
     try {
         const { number } = req.query;
 
@@ -43,7 +98,7 @@ router.get('/search', async (req, res) => {
 });
 
 // API check endpoint (returns true/false as text)
-router.get('/check', async (req, res) => {
+router.get('/check', rateLimitMiddleware, async (req, res) => {
     try {
         const { card } = req.query;
 

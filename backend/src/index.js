@@ -22,8 +22,32 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Static files for admin panel
-app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
+// Static files for admin panel with clean URLs
+const adminPath = path.join(__dirname, '../public/admin');
+const fs = require('fs');
+
+// Serve admin files without .html extension
+app.use('/admin', (req, res, next) => {
+    let filePath = req.path;
+    
+    // Remove trailing slash
+    if (filePath.endsWith('/') && filePath !== '/') {
+        filePath = filePath.slice(0, -1);
+    }
+    
+    // Check if it's a directory or file without extension
+    const fullPath = path.join(adminPath, filePath);
+    const htmlPath = fullPath + '.html';
+    
+    // If no extension and .html file exists, serve it
+    if (!path.extname(filePath) && fs.existsSync(htmlPath)) {
+        return res.sendFile(htmlPath);
+    }
+    
+    next();
+});
+
+app.use('/admin', express.static(adminPath));
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
