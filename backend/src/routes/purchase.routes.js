@@ -4,6 +4,67 @@ const db = require('../db');
 const voucherService = require('../services/voucher.service');
 const emailService = require('../services/email.service');
 
+// Generate random voucher number (13 digits)
+function generateVoucherNumber() {
+    return Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
+}
+
+// Create new purchase (main endpoint)
+router.post('/', async (req, res) => {
+    try {
+        const {
+            voucherType,
+            amount,
+            buyerFirstName,
+            buyerLastName,
+            buyerPhone,
+            buyerEmail,
+            recipientFirstName,
+            recipientLastName,
+            recipientPhone,
+            greeting
+        } = req.body;
+
+        // Generate unique voucher number
+        let voucherNumber = generateVoucherNumber();
+        
+        // Check if voucher number already exists
+        let exists = await db.query('SELECT 1 FROM purchases WHERE voucher_number = $1', [voucherNumber]);
+        while (exists.rows.length > 0) {
+            voucherNumber = generateVoucherNumber();
+            exists = await db.query('SELECT 1 FROM purchases WHERE voucher_number = $1', [voucherNumber]);
+        }
+
+        // Save purchase
+        const result = await db.query(
+            `INSERT INTO purchases 
+             (voucher_number, amount, buyer_first_name, buyer_last_name, buyer_phone, buyer_email,
+              recipient_first_name, recipient_last_name, recipient_phone, greeting, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
+             RETURNING id`,
+            [voucherNumber, amount, buyerFirstName, buyerLastName, buyerPhone, buyerEmail,
+             recipientFirstName, recipientLastName, recipientPhone, greeting]
+        );
+
+        const purchaseId = result.rows[0].id;
+
+        // TODO: Generate real payment URL from payment provider
+        // For now, using a placeholder that will be replaced with actual payment integration
+        const paymentUrl = `https://www.paypal.com/checkoutnow?token=placeholder_${purchaseId}`;
+
+        res.json({
+            success: true,
+            purchaseId,
+            voucherNumber,
+            paymentUrl
+        });
+
+    } catch (error) {
+        console.error('Create purchase error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה ביצירת הזמנה' });
+    }
+});
+
 // Save purchase data (before payment)
 router.post('/save', async (req, res) => {
     try {

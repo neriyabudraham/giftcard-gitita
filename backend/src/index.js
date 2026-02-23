@@ -28,6 +28,7 @@ app.use('/auth', authRoutes);
 app.use('/users', usersRoutes);
 app.use('/vouchers', vouchersRoutes);
 app.use('/purchase', purchaseRoutes);
+app.use('/purchases', purchaseRoutes);
 app.use('/voucher', voucherRoutes);
 
 // Health check
