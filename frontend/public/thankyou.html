@@ -249,7 +249,9 @@
                 אנחנו בודקים את סטטוס התשלום שלך.<br>
                 הדף יתעדכן אוטומטית ברגע שהתשלום יאושר.
             </p>
-            <p class="info-text" id="checkCount">בודק... (ניסיון 1)</p>
+            <div class="actions" style="margin-top: 30px;">
+                <a href="/" class="btn btn-secondary">חזרה לדף הבית</a>
+            </div>
         </div>
         
         <!-- Success State -->
@@ -336,11 +338,9 @@
         
         async function checkVoucherStatus() {
             checkAttempts++;
-            document.getElementById('checkCount').textContent = `בודק... (ניסיון ${checkAttempts})`;
             
             if (checkAttempts > maxAttempts) {
                 clearInterval(checkInterval);
-                document.getElementById('checkCount').textContent = 'לא הצלחנו לאמת את התשלום. אם שילמת, אנא צור קשר.';
                 return;
             }
             
