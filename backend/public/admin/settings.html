@@ -259,6 +259,16 @@
                 <p style="color:#888">טוען...</p>
             </div>
         </div>
+
+        <!-- Default Greeting Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>💬 ברכת ברירת מחדל</h2>
+                <button class="btn btn-primary btn-small" onclick="saveDefaultGreeting()">שמור</button>
+            </div>
+            <p style="color:#888; margin-bottom: 15px;">הברכה שתופיע כברירת מחדל בטופס הרכישה (הימנעו מאימוג'ים)</p>
+            <textarea class="form-textarea" id="defaultGreeting" style="min-height: 150px;" placeholder="הזינו ברכת ברירת מחדל..."></textarea>
+        </div>
     </div>
 
     <!-- Add Image Modal -->
@@ -317,6 +327,7 @@
         const API = '/api';
         let carouselImages = [];
         let faqItems = [];
+        let defaultGreeting = '';
 
         // Check auth
         checkAuth();
@@ -341,11 +352,38 @@
                 
                 carouselImages = settings.carousel_images || [];
                 faqItems = settings.faq_items || [];
+                defaultGreeting = settings.default_greeting || `באהבה, מכל הלב
+
+שיהיה רגע של פינוק, הפסקה של שלווה,
+או נגיעה קטנה של ירוק בעיניים
+
+מקווים שתהנו מהשובר הזה בדיוק כמו שחשבנו עליכם כשבחרנו אותו`;
                 
+                document.getElementById('defaultGreeting').value = defaultGreeting;
                 renderImages();
                 renderFaq();
             } catch (error) {
                 console.error('Error loading settings:', error);
+            }
+        }
+        
+        async function saveDefaultGreeting() {
+            const greeting = document.getElementById('defaultGreeting').value.trim();
+            if (!greeting) {
+                alert('נא להזין ברכה');
+                return;
+            }
+            
+            try {
+                await fetch(`${API}/settings/default_greeting`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ value: greeting })
+                });
+                showSaveIndicator();
+            } catch (error) {
+                alert('שגיאה בשמירה');
             }
         }
 

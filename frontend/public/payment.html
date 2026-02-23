@@ -317,12 +317,7 @@
             <div class="greeting-section">
                 <h3 class="greeting-title">ברכה על השובר</h3>
                 <p class="greeting-description">כאן תוכלו להוסיף ברכה אישית שתופיע על שובר המתנה</p>
-                <textarea name="greeting" class="form-textarea" placeholder="כתבו כאן את הברכה האישית שלכם...">באהבה, מכל הלב
-
-שיהיה רגע של פינוק, הפסקה של שלווה,
-או נגיעה קטנה של ירוק בעיניים ☕
-
-מקווים שתהנו מהשובר הזה בדיוק כמו שחשבנו עליכם כשבחרנו אותו :)</textarea>
+                <textarea name="greeting" class="form-textarea" id="greetingTextarea" placeholder="כתבו כאן את הברכה האישית שלכם..."></textarea>
             </div>
 
             <div class="form-actions">
@@ -368,6 +363,29 @@
         if (!selectedVoucher.amount || selectedVoucher.amount === '0') {
             window.location.href = '/';
         }
+        
+        // Load default greeting from settings
+        async function loadDefaultGreeting() {
+            try {
+                const res = await fetch(`${API}/settings/public`);
+                const settings = await res.json();
+                const defaultGreeting = settings.default_greeting || `באהבה, מכל הלב
+
+שיהיה רגע של פינוק, הפסקה של שלווה,
+או נגיעה קטנה של ירוק בעיניים
+
+מקווים שתהנו מהשובר הזה בדיוק כמו שחשבנו עליכם כשבחרנו אותו`;
+                document.getElementById('greetingTextarea').value = defaultGreeting;
+            } catch (e) {
+                document.getElementById('greetingTextarea').value = `באהבה, מכל הלב
+
+שיהיה רגע של פינוק, הפסקה של שלווה,
+או נגיעה קטנה של ירוק בעיניים
+
+מקווים שתהנו מהשובר הזה בדיוק כמו שחשבנו עליכם כשבחרנו אותו`;
+            }
+        }
+        loadDefaultGreeting();
         
         document.getElementById('purchaseForm').addEventListener('submit', async (e) => {
             e.preventDefault();

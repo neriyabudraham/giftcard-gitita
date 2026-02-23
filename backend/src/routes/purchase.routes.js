@@ -245,6 +245,18 @@ router.post('/webhook', async (req, res) => {
             return res.status(400).json({ error: true, message: 'חסר טלפון או מייל לזיהוי' });
         }
 
+        // Check if this payment reference was already processed (prevent duplicate webhooks)
+        if (paymentReference) {
+            const existingPayment = await db.query(
+                'SELECT id FROM purchases WHERE payment_id = $1',
+                [paymentReference]
+            );
+            if (existingPayment.rows.length > 0) {
+                console.log('Payment already processed:', paymentReference);
+                return res.json({ success: true, message: 'תשלום כבר עובד', alreadyProcessed: true });
+            }
+        }
+
         // Find the oldest pending purchase matching phone/email and amount
         // Using FIFO (First In First Out) to handle multiple purchases
         const purchaseResult = await db.query(

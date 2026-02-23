@@ -452,7 +452,7 @@
                 document.getElementById('totalVouchers').textContent = total;
                 document.getElementById('activeVouchers').textContent = active;
                 document.getElementById('usedVouchers').textContent = used;
-                document.getElementById('totalAmount').textContent = '₪' + totalAmount.toLocaleString();
+                document.getElementById('totalAmount').textContent = '₪' + (Number.isInteger(totalAmount) ? totalAmount : totalAmount.toLocaleString());
                 
             } catch (error) {
                 console.error('Error loading stats:', error);
@@ -516,12 +516,13 @@
                                 <tr>
                                     <td><strong>${v.voucher_number}</strong></td>
                                     <td>${v.customer_name || '-'}</td>
-                                    <td>₪${parseFloat(v.original_amount).toLocaleString()}</td>
-                                    <td>₪${parseFloat(v.remaining_amount).toLocaleString()}</td>
+                                    <td>₪${Number.isInteger(parseFloat(v.original_amount)) ? parseInt(v.original_amount) : parseFloat(v.original_amount).toLocaleString()}</td>
+                                    <td>₪${Number.isInteger(parseFloat(v.remaining_amount)) ? parseInt(v.remaining_amount) : parseFloat(v.remaining_amount).toLocaleString()}</td>
                                     <td>${v.expiry_date ? new Date(v.expiry_date).toLocaleDateString('he-IL') : '-'}</td>
                                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                                     <td class="actions-cell">
                                         <button class="btn btn-sm btn-secondary" onclick="viewVoucher(${v.id})">צפייה</button>
+                                        <button class="btn btn-sm btn-primary" onclick="downloadVoucher('${v.voucher_number}')" title="הורדה">⬇</button>
                                         ${v.status === 'active' && !isExpired ? 
                                             `<button class="btn btn-sm btn-success" onclick="openUseModal(${v.id})">שימוש</button>` : ''}
                                     </td>
@@ -545,7 +546,7 @@
             document.getElementById('useVoucherDetails').innerHTML = `
                 <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
                 <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>
-                <p><span>יתרה נוכחית:</span> <strong>₪${parseFloat(voucher.remaining_amount).toLocaleString()}</strong></p>
+                <p><span>יתרה נוכחית:</span> <strong>₪${Number.isInteger(parseFloat(voucher.remaining_amount)) ? parseInt(voucher.remaining_amount) : parseFloat(voucher.remaining_amount).toLocaleString()}</strong></p>
             `;
             
             document.getElementById('useModal').classList.add('show');
@@ -579,8 +580,8 @@
                         <p><span>שם לקוח:</span> <strong>${v.customer_name || '-'}</strong></p>
                         <p><span>טלפון:</span> <strong>${v.phone_number || '-'}</strong></p>
                         <p><span>אימייל:</span> <strong>${v.email || '-'}</strong></p>
-                        <p><span>סכום מקורי:</span> <strong>₪${parseFloat(v.original_amount).toLocaleString()}</strong></p>
-                        <p><span>יתרה:</span> <strong>₪${parseFloat(v.remaining_amount).toLocaleString()}</strong></p>
+                        <p><span>סכום מקורי:</span> <strong>₪${Number.isInteger(parseFloat(v.original_amount)) ? parseInt(v.original_amount) : parseFloat(v.original_amount).toLocaleString()}</strong></p>
+                        <p><span>יתרה:</span> <strong>₪${Number.isInteger(parseFloat(v.remaining_amount)) ? parseInt(v.remaining_amount) : parseFloat(v.remaining_amount).toLocaleString()}</strong></p>
                         <p><span>תאריך רכישה:</span> <strong>${v.purchase_date ? new Date(v.purchase_date).toLocaleDateString('he-IL') : '-'}</strong></p>
                         <p><span>תוקף:</span> <strong>${v.expiry_date ? new Date(v.expiry_date).toLocaleDateString('he-IL') : '-'}</strong></p>
                         <p><span>סטטוס:</span> <strong>${v.status === 'used' ? 'נוצל' : (isExpired ? 'פג תוקף' : 'פעיל')}</strong></p>
@@ -686,6 +687,38 @@
         document.getElementById('searchInput').addEventListener('keyup', (e) => {
             if (e.key === 'Enter') loadVouchers();
         });
+
+        async function downloadVoucher(voucherNumber) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API}/voucher/${voucherNumber}/generate`, { credentials: 'include' });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `voucher-${voucherNumber}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(errorData.message || 'שגיאה ביצירת השובר');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('שגיאה בהורדה');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
 
         async function logout() {
             try {

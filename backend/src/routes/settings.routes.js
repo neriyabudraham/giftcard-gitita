@@ -3,11 +3,11 @@ const router = express.Router();
 const db = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 
-// Get public settings (carousel images, FAQ)
+// Get public settings (carousel images, FAQ, default greeting)
 router.get('/public', async (req, res) => {
     try {
         const result = await db.query(
-            "SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('carousel_images', 'faq_items')"
+            "SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('carousel_images', 'faq_items', 'default_greeting')"
         );
         
         const settings = {};
