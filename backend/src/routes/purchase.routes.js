@@ -15,6 +15,7 @@ router.post('/', async (req, res) => {
         const {
             voucherType,
             amount,
+            paymentUrl: requestedPaymentUrl,
             buyerFirstName,
             buyerLastName,
             buyerPhone,
@@ -48,16 +49,18 @@ router.post('/', async (req, res) => {
 
         const purchaseId = result.rows[0].id;
 
-        // Meshulam payment links by amount
-        const paymentLinks = {
-            '95': 'https://meshulam.co.il/quick_payment?b=94d3052b31acdf125df594d1b61d9d06',
-            '188': 'https://meshulam.co.il/quick_payment?b=94f3afb628451a34b6868895f1cef522',
-            '100': 'https://meshulam.co.il/quick_payment?b=e5cbd287b0610688a5dc413649649a40',
-            '300': 'https://meshulam.co.il/quick_payment?b=bb441e5bf72a76ecb2be8498f7c43149',
-            '600': 'https://meshulam.co.il/quick_payment?b=7b3fdae2f87845522fd06fdd5a9c47e6'
-        };
-
-        const paymentUrl = paymentLinks[amount] || paymentLinks['100'];
+        // Use provided payment URL or fallback to default links by amount
+        let paymentUrl = requestedPaymentUrl;
+        if (!paymentUrl) {
+            const paymentLinks = {
+                '95': 'https://meshulam.co.il/quick_payment?b=94d3052b31acdf125df594d1b61d9d06',
+                '188': 'https://meshulam.co.il/quick_payment?b=94f3afb628451a34b6868895f1cef522',
+                '100': 'https://meshulam.co.il/quick_payment?b=e5cbd287b0610688a5dc413649649a40',
+                '300': 'https://meshulam.co.il/quick_payment?b=bb441e5bf72a76ecb2be8498f7c43149',
+                '600': 'https://meshulam.co.il/quick_payment?b=7b3fdae2f87845522fd06fdd5a9c47e6'
+            };
+            paymentUrl = paymentLinks[amount] || paymentLinks['100'];
+        }
 
         res.json({
             success: true,

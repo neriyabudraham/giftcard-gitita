@@ -8,6 +8,7 @@ const usersRoutes = require('./routes/users.routes');
 const vouchersRoutes = require('./routes/vouchers.routes');
 const purchaseRoutes = require('./routes/purchase.routes');
 const voucherRoutes = require('./routes/voucher.routes');
+const productsRoutes = require('./routes/products.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +31,7 @@ app.use('/vouchers', vouchersRoutes);
 app.use('/purchase', purchaseRoutes);
 app.use('/purchases', purchaseRoutes);
 app.use('/voucher', voucherRoutes);
+app.use('/products', productsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -361,7 +361,9 @@
         const API = '/api';
         let selectedVoucher = JSON.parse(localStorage.getItem('selectedVoucher') || '{"amount":"0","name":"שובר"}');
         
-        document.getElementById('amountBadge').textContent = `${selectedVoucher.name} - ₪${selectedVoucher.amount}`;
+        // Display name - avoid showing price twice if name already contains price
+        const displayName = selectedVoucher.name.includes('₪') ? selectedVoucher.name : `${selectedVoucher.name} - ₪${selectedVoucher.amount}`;
+        document.getElementById('amountBadge').textContent = displayName;
         
         if (!selectedVoucher.amount || selectedVoucher.amount === '0') {
             window.location.href = '/';
@@ -379,6 +381,7 @@
             const data = {
                 voucherType: selectedVoucher.name,
                 amount: selectedVoucher.amount,
+                paymentUrl: selectedVoucher.paymentUrl || '',
                 buyerFirstName: formData.get('buyerFirstName'),
                 buyerLastName: formData.get('buyerLastName'),
                 buyerPhone: formData.get('buyerPhone'),

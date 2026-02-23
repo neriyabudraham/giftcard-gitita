@@ -93,6 +93,31 @@ INSERT INTO users (email, name, role, is_active, password_created)
 VALUES ('office@neriyabudraham.co.il', 'מנהל ראשי', 'admin', true, false)
 ON CONFLICT (email) DO NOTHING;
 
+-- Products table
+CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    payment_url TEXT,
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    is_premium BOOLEAN DEFAULT false,
+    icon VARCHAR(10) DEFAULT '🎁',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default products
+INSERT INTO products (name, price, description, image_url, payment_url, display_order, icon) VALUES
+('קפה מאפה זוגי + עציץ', 95, 'חוויה מושלמת של קפה טרי, מאפה טעים ועציץ יפהפה.', 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dbef79067_WhatsAppImage2025-09-01at214813.jpg', 'https://meshulam.co.il/quick_payment?b=94d3052b31acdf125df594d1b61d9d06', 1, '☕'),
+('ארוחת בוקר זוגית', 188, 'ארוחת בוקר מפנקת וטעימה לזוג מול הנוף הקסום.', 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/e5807747d_WhatsAppImage2025-09-01at215020.jpg', 'https://meshulam.co.il/quick_payment?b=94f3afb628451a34b6868895f1cef522', 2, '🍳'),
+('שובר 100₪', 100, 'פינוק בעגלת הקפה ו/או צמחים יפים במשתלה בשווי 100₪', 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/abe928931_WhatsAppImage2025-09-01at220738.jpg', 'https://meshulam.co.il/quick_payment?b=e5cbd287b0610688a5dc413649649a40', 3, '🎁'),
+('שובר 300₪', 300, 'פינוק משודרג בעגלת הקפה ו/או במשתלה בשווי 300₪', 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/38f50aafd_WhatsAppImage2025-09-01at220726.jpg', 'https://meshulam.co.il/quick_payment?b=bb441e5bf72a76ecb2be8498f7c43149', 4, '💎'),
+('שובר 600₪', 600, 'השובר המושלם לחווייה כוללת בשפת המדבר', 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/81307b929_WhatsAppImage2025-09-01at220716.jpg', 'https://meshulam.co.il/quick_payment?b=7b3fdae2f87845522fd06fdd5a9c47e6', 5, '👑')
+ON CONFLICT DO NOTHING;
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_vouchers_number ON vouchers(voucher_number);
 CREATE INDEX IF NOT EXISTS idx_vouchers_status ON vouchers(status);

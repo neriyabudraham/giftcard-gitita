@@ -463,46 +463,8 @@
     <section id="vouchers" class="section">
         <div class="container">
             <h2>בחר את החוויה שלך</h2>
-            <div class="vouchers-grid">
-                <div class="voucher-card with-background-coffee">
-                    <div class="voucher-icon">☕</div>
-                    <h3>קפה מאפה זוגי + עציץ</h3>
-                    <p class="description">חוויה מושלמת של קפה טרי, מאפה טעים ועציץ יפהפה.</p>
-                    <div class="price-display">₪95</div>
-                    <button onclick="selectVoucher('95', 'קפה מאפה זוגי + עציץ')" class="cta-button">רכישה מיידית</button>
-                </div>
-                
-                <div class="voucher-card with-background-breakfast">
-                    <div class="voucher-icon">🍳</div>
-                    <h3>ארוחת בוקר זוגית</h3>
-                    <p class="description">ארוחת בוקר מפנקת וטעימה לזוג מול הנוף הקסום.</p>
-                    <div class="price-display">₪188</div>
-                    <button onclick="selectVoucher('188', 'ארוחת בוקר זוגית')" class="cta-button">רכישה מיידית</button>
-                </div>
-                
-                <div class="voucher-card with-background-100">
-                    <div class="voucher-icon">🎁</div>
-                    <h3>שובר 100₪</h3>
-                    <p class="description">פינוק בעגלת הקפה ו/או צמחים יפים במשתלה בשווי 100₪</p>
-                    <div class="price-display">₪100</div>
-                    <button onclick="selectVoucher('100', 'שובר 100₪')" class="cta-button">רכישה מיידית</button>
-                </div>
-                
-                <div class="voucher-card with-background-300">
-                    <div class="voucher-icon">💎</div>
-                    <h3>שובר 300₪</h3>
-                    <p class="description">פינוק משודרג בעגלת הקפה ו/או במשתלה בשווי 300₪</p>
-                    <div class="price-display">₪300</div>
-                    <button onclick="selectVoucher('300', 'שובר 300₪')" class="cta-button">רכישה מיידית</button>
-                </div>
-                
-                <div class="voucher-card premium with-background-600">
-                    <div class="voucher-icon">👑</div>
-                    <h3>שובר 600₪</h3>
-                    <p class="description">השובר המושלם לחווייה כוללת בשפת המדבר</p>
-                    <div class="price-display">₪600</div>
-                    <button onclick="selectVoucher('600', 'שובר 600₪')" class="cta-button">רכישה מיידית</button>
-                </div>
+            <div class="vouchers-grid" id="productsGrid">
+                <p style="color:#888;text-align:center">טוען מוצרים...</p>
             </div>
         </div>
     </section>
@@ -576,6 +538,7 @@
     </a>
 
     <script>
+        // Carousel
         let currentImage = 0;
         const images = document.querySelectorAll('.carousel-image');
         const indicators = document.querySelectorAll('.carousel-indicator');
@@ -592,6 +555,7 @@
         
         setInterval(nextImage, 5000);
         
+        // FAQ
         function toggleFaq(element) {
             const answer = element.nextElementSibling;
             const isActive = element.classList.contains('active');
@@ -605,10 +569,43 @@
             }
         }
         
-        function selectVoucher(amount, name) {
-            localStorage.setItem('selectedVoucher', JSON.stringify({ amount, name }));
+        // Products
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/products');
+                const products = await res.json();
+                renderProducts(products);
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('productsGrid').innerHTML = '<p style="color:#888">שגיאה בטעינת מוצרים</p>';
+            }
+        }
+        
+        function renderProducts(products) {
+            const grid = document.getElementById('productsGrid');
+            if (!products.length) {
+                grid.innerHTML = '<p style="color:#888">אין מוצרים זמינים כרגע</p>';
+                return;
+            }
+            
+            grid.innerHTML = products.map(p => `
+                <div class="voucher-card ${p.is_premium ? 'premium' : ''}" style="${p.image_url ? 'background-image:url(' + p.image_url + ');background-size:cover;background-position:center' : ''}">
+                    <div class="voucher-icon">${p.icon || '🎁'}</div>
+                    <h3>${p.name}</h3>
+                    <p class="description">${p.description || ''}</p>
+                    <div class="price-display">₪${parseFloat(p.price).toLocaleString()}</div>
+                    <button onclick="selectVoucher('${p.price}', '${p.name}', '${p.payment_url || ''}')" class="cta-button">רכישה מיידית</button>
+                </div>
+            `).join('');
+        }
+        
+        function selectVoucher(amount, name, paymentUrl) {
+            localStorage.setItem('selectedVoucher', JSON.stringify({ amount, name, paymentUrl }));
             window.location.href = '/payment';
         }
+        
+        // Load products on page load
+        loadProducts();
     </script>
 </body>
 </html>
