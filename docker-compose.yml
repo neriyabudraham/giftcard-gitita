@@ -24,17 +24,49 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USER=${SMTP_USER}
+      - DATABASE_URL=postgresql://giftcard:giftcard_pass@postgres:5432/giftcard_db
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-office@neriyabudraham.co.il}
       - SMTP_PASS=${SMTP_PASS}
-      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_FROM=${SMTP_FROM:-"שפת המדבר <office@neriyabudraham.co.il>"}
       - HTML2PNG_URL=https://files2.neriyabudraham.co.il/html2png/coordinates
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://giftcard-gitita.botomat.co.il/api/auth/google/callback}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - ADMIN_EMAIL=office@neriyabudraham.co.il
     volumes:
       - ./backend/vouchers:/app/vouchers
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - giftcard-network
     restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=giftcard
+      - POSTGRES_PASSWORD=giftcard_pass
+      - POSTGRES_DB=giftcard_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U giftcard -d giftcard_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - giftcard-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
 
 networks:
   giftcard-network:

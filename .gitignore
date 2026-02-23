@@ -1,4 +1,7 @@
 node_modules/
 .env
 *.log
+backend/vouchers/*.png
+backend/vouchers/*.pdf
 /www/wwwroot/giftcard-gitita.botomat.co.il/data
+postgres_data/

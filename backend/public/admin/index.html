@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול שוברים - שפת המדבר</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Assistant', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: white;
+        }
+        .navbar {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .navbar-brand img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+        }
+        .navbar-brand h1 {
+            font-size: 1.3rem;
+            color: #FFD700;
+        }
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .user-name { color: #ccc; }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .nav-link {
+            color: #ccc;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,215,0,0.2);
+            color: #FFD700;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-logout {
+            background: rgba(220,53,69,0.3);
+            color: #ff6b6b;
+        }
+        .btn-logout:hover { background: rgba(220,53,69,0.5); }
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #1a1a1a;
+        }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .btn-success {
+            background: rgba(40,167,69,0.3);
+            color: #5cb85c;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-card h3 {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #FFD700;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+        .card-header {
+            background: rgba(0,0,0,0.2);
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header h2 {
+            color: #FFD700;
+            font-size: 1.3rem;
+        }
+        .card-body { padding: 25px; }
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar input, .search-bar select {
+            padding: 12px 18px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        .search-bar input::placeholder { color: #888; }
+        .search-bar input:focus, .search-bar select:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th {
+            background: rgba(0,0,0,0.2);
+            color: #FFD700;
+            font-weight: 600;
+        }
+        tr:hover { background: rgba(255,255,255,0.03); }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-active { background: rgba(40,167,69,0.2); color: #5cb85c; }
+        .status-used { background: rgba(108,117,125,0.2); color: #aaa; }
+        .status-expired { background: rgba(220,53,69,0.2); color: #ff6b6b; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { color: #FFD700; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body { padding: 25px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            color: #ddd;
+            margin-bottom: 8px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .voucher-details {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .voucher-details p {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .voucher-details strong { color: #FFD700; }
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 15px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            table { font-size: 0.85rem; }
+            th, td { padding: 10px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="לוגו">
+            <h1>מערכת ניהול שוברים</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/admin/" class="nav-link active">שוברים</a>
+            <a href="/admin/users.html" class="nav-link" id="usersLink" style="display:none">משתמשים</a>
+        </div>
+        <div class="navbar-user">
+            <span class="user-name" id="userName"></span>
+            <button class="btn btn-logout" onclick="logout()">התנתקות</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <h3>סה"כ שוברים</h3>
+                <div class="value" id="totalVouchers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>שוברים פעילים</h3>
+                <div class="value" id="activeVouchers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>שוברים שנוצלו</h3>
+                <div class="value" id="usedVouchers">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>סכום כולל פעיל</h3>
+                <div class="value" id="totalAmount">-</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>רשימת שוברים</h2>
+                <button class="btn btn-primary" onclick="openCreateModal()">+ שובר חדש</button>
+            </div>
+            <div class="card-body">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="חיפוש לפי מספר / שם / טלפון...">
+                    <select id="statusFilter">
+                        <option value="">כל הסטטוסים</option>
+                        <option value="active">פעיל</option>
+                        <option value="used">נוצל</option>
+                        <option value="expired">פג תוקף</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadVouchers()">חיפוש</button>
+                </div>
+                <div id="vouchersTable">
+                    <div class="loading">טוען...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Use Voucher Modal -->
+    <div class="modal" id="useModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>שימוש בשובר</h3>
+                <button class="modal-close" onclick="closeModal('useModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="voucher-details" id="useVoucherDetails"></div>
+                <form id="useForm">
+                    <input type="hidden" id="useVoucherId">
+                    <div class="form-group">
+                        <label>סכום לניצול</label>
+                        <input type="number" id="useAmount" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>הערות (אופציונלי)</label>
+                        <textarea id="useNotes" placeholder="הערות לרישום..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">אישור שימוש</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Voucher Modal -->
+    <div class="modal" id="createModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>יצירת שובר חדש</h3>
+                <button class="modal-close" onclick="closeModal('createModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createForm">
+                    <div class="form-group">
+                        <label>מספר שובר (13 ספרות)</label>
+                        <input type="text" id="createNumber" pattern="\d{13}" required placeholder="יווצר אוטומטית">
+                        <button type="button" class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="generateVoucherNumber()">צור מספר</button>
+                    </div>
+                    <div class="form-group">
+                        <label>סכום</label>
+                        <input type="number" id="createAmount" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>שם לקוח</label>
+                        <input type="text" id="createCustomerName">
+                    </div>
+                    <div class="form-group">
+                        <label>טלפון</label>
+                        <input type="tel" id="createPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>אימייל</label>
+                        <input type="email" id="createEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>תאריך תפוגה</label>
+                        <input type="date" id="createExpiry">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">יצירת שובר</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Voucher Modal -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>פרטי שובר</h3>
+                <button class="modal-close" onclick="closeModal('viewModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="viewModalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        let currentUser = null;
+        let vouchers = [];
+
+        async function init() {
+            try {
+                const res = await fetch(`${API}/auth/me`, { credentials: 'include' });
+                if (!res.ok) throw new Error('Not authenticated');
+                
+                const data = await res.json();
+                currentUser = data.user;
+                
+                document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+                
+                if (currentUser.role === 'admin') {
+                    document.getElementById('usersLink').style.display = 'block';
+                }
+                
+                if (currentUser.password_reset_required) {
+                    window.location.href = '/admin/create-password.html?reset=true';
+                    return;
+                }
+                
+                loadVouchers();
+                loadStats();
+                
+            } catch (error) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API}/vouchers?limit=1000`, { credentials: 'include' });
+                const data = await res.json();
+                
+                const total = data.total || 0;
+                const active = data.vouchers.filter(v => v.status === 'active').length;
+                const used = data.vouchers.filter(v => v.status === 'used').length;
+                const totalAmount = data.vouchers
+                    .filter(v => v.status === 'active')
+                    .reduce((sum, v) => sum + parseFloat(v.remaining_amount || 0), 0);
+                
+                document.getElementById('totalVouchers').textContent = total;
+                document.getElementById('activeVouchers').textContent = active;
+                document.getElementById('usedVouchers').textContent = used;
+                document.getElementById('totalAmount').textContent = '₪' + totalAmount.toLocaleString();
+                
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadVouchers() {
+            const search = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+            
+            let url = `${API}/vouchers?`;
+            if (search) url += `search=${encodeURIComponent(search)}&`;
+            if (status) url += `status=${status}&`;
+            
+            try {
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                
+                vouchers = data.vouchers;
+                renderVouchers();
+                
+            } catch (error) {
+                console.error('Error loading vouchers:', error);
+                document.getElementById('vouchersTable').innerHTML = '<div class="empty-state">שגיאה בטעינת נתונים</div>';
+            }
+        }
+
+        function renderVouchers() {
+            if (vouchers.length === 0) {
+                document.getElementById('vouchersTable').innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        </svg>
+                        <p>אין שוברים להצגה</p>
+                    </div>`;
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>מספר שובר</th>
+                            <th>שם לקוח</th>
+                            <th>סכום מקורי</th>
+                            <th>יתרה</th>
+                            <th>תאריך תפוגה</th>
+                            <th>סטטוס</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${vouchers.map(v => {
+                            const isExpired = v.expiry_date && new Date(v.expiry_date) < new Date();
+                            const statusClass = v.status === 'used' ? 'status-used' : 
+                                               (isExpired ? 'status-expired' : 'status-active');
+                            const statusText = v.status === 'used' ? 'נוצל' : 
+                                              (isExpired ? 'פג תוקף' : 'פעיל');
+                            return `
+                                <tr>
+                                    <td><strong>${v.voucher_number}</strong></td>
+                                    <td>${v.customer_name || '-'}</td>
+                                    <td>₪${parseFloat(v.original_amount).toLocaleString()}</td>
+                                    <td>₪${parseFloat(v.remaining_amount).toLocaleString()}</td>
+                                    <td>${v.expiry_date ? new Date(v.expiry_date).toLocaleDateString('he-IL') : '-'}</td>
+                                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                                    <td class="actions-cell">
+                                        <button class="btn btn-sm btn-secondary" onclick="viewVoucher(${v.id})">צפייה</button>
+                                        ${v.status === 'active' && !isExpired ? 
+                                            `<button class="btn btn-sm btn-success" onclick="openUseModal(${v.id})">שימוש</button>` : ''}
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
+            
+            document.getElementById('vouchersTable').innerHTML = html;
+        }
+
+        function openUseModal(id) {
+            const voucher = vouchers.find(v => v.id === id);
+            if (!voucher) return;
+            
+            document.getElementById('useVoucherId').value = id;
+            document.getElementById('useAmount').max = voucher.remaining_amount;
+            document.getElementById('useAmount').value = '';
+            document.getElementById('useNotes').value = '';
+            
+            document.getElementById('useVoucherDetails').innerHTML = `
+                <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
+                <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>
+                <p><span>יתרה נוכחית:</span> <strong>₪${parseFloat(voucher.remaining_amount).toLocaleString()}</strong></p>
+            `;
+            
+            document.getElementById('useModal').classList.add('show');
+        }
+
+        function openCreateModal() {
+            document.getElementById('createForm').reset();
+            generateVoucherNumber();
+            
+            // Set default expiry date to 1 year from now
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            document.getElementById('createExpiry').value = expiryDate.toISOString().split('T')[0];
+            
+            document.getElementById('createModal').classList.add('show');
+        }
+
+        async function viewVoucher(id) {
+            try {
+                const res = await fetch(`${API}/vouchers/${id}`, { credentials: 'include' });
+                const data = await res.json();
+                
+                const v = data.voucher;
+                const history = data.usage_history || [];
+                
+                const isExpired = v.expiry_date && new Date(v.expiry_date) < new Date();
+                
+                document.getElementById('viewModalBody').innerHTML = `
+                    <div class="voucher-details">
+                        <p><span>מספר שובר:</span> <strong>${v.voucher_number}</strong></p>
+                        <p><span>שם לקוח:</span> <strong>${v.customer_name || '-'}</strong></p>
+                        <p><span>טלפון:</span> <strong>${v.phone_number || '-'}</strong></p>
+                        <p><span>אימייל:</span> <strong>${v.email || '-'}</strong></p>
+                        <p><span>סכום מקורי:</span> <strong>₪${parseFloat(v.original_amount).toLocaleString()}</strong></p>
+                        <p><span>יתרה:</span> <strong>₪${parseFloat(v.remaining_amount).toLocaleString()}</strong></p>
+                        <p><span>תאריך רכישה:</span> <strong>${v.purchase_date ? new Date(v.purchase_date).toLocaleDateString('he-IL') : '-'}</strong></p>
+                        <p><span>תוקף:</span> <strong>${v.expiry_date ? new Date(v.expiry_date).toLocaleDateString('he-IL') : '-'}</strong></p>
+                        <p><span>סטטוס:</span> <strong>${v.status === 'used' ? 'נוצל' : (isExpired ? 'פג תוקף' : 'פעיל')}</strong></p>
+                        ${v.greeting ? `<p><span>ברכה:</span> <strong>${v.greeting}</strong></p>` : ''}
+                    </div>
+                    ${history.length > 0 ? `
+                        <h4 style="color:#FFD700;margin-bottom:15px">היסטוריית שימוש</h4>
+                        <table>
+                            <thead><tr><th>תאריך</th><th>סכום</th><th>יתרה אחרי</th><th>בוצע ע"י</th></tr></thead>
+                            <tbody>
+                                ${history.map(h => `
+                                    <tr>
+                                        <td>${new Date(h.created_at).toLocaleString('he-IL')}</td>
+                                        <td>₪${parseFloat(h.amount_used).toLocaleString()}</td>
+                                        <td>₪${parseFloat(h.remaining_after).toLocaleString()}</td>
+                                        <td>${h.used_by_name || '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : ''}
+                `;
+                
+                document.getElementById('viewModal').classList.add('show');
+                
+            } catch (error) {
+                alert('שגיאה בטעינת פרטי שובר');
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        function generateVoucherNumber() {
+            const num = Math.floor(Math.random() * 9000000000000) + 1000000000000;
+            document.getElementById('createNumber').value = num.toString();
+        }
+
+        document.getElementById('useForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('useVoucherId').value;
+            const amount = parseFloat(document.getElementById('useAmount').value);
+            const notes = document.getElementById('useNotes').value;
+            
+            try {
+                const res = await fetch(`${API}/vouchers/${id}/use`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ amount, notes })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) throw new Error(data.message);
+                
+                alert(`שימוש נרשם בהצלחה!\nסכום: ₪${amount}\nיתרה חדשה: ₪${data.remaining_amount}`);
+                closeModal('useModal');
+                loadVouchers();
+                loadStats();
+                
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const voucher = {
+                voucher_number: document.getElementById('createNumber').value,
+                original_amount: parseFloat(document.getElementById('createAmount').value),
+                customer_name: document.getElementById('createCustomerName').value,
+                phone_number: document.getElementById('createPhone').value,
+                email: document.getElementById('createEmail').value,
+                expiry_date: document.getElementById('createExpiry').value
+            };
+            
+            try {
+                const res = await fetch(`${API}/vouchers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(voucher)
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) throw new Error(data.message);
+                
+                alert('שובר נוצר בהצלחה!');
+                closeModal('createModal');
+                loadVouchers();
+                loadStats();
+                
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') loadVouchers();
+        });
+
+        async function logout() {
+            try {
+                await fetch(`${API}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch {}
+            window.location.href = '/admin/login.html';
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal.id);
+            });
+        });
+
+        init();
+    </script>
+</body>
+</html>

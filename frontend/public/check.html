@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בדיקת שובר - שפת המדבר</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Varela+Round&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Assistant', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        }
+        .bg-animation {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-circle-1 {
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom right, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+        }
+        .bg-circle-2 {
+            bottom: -50%;
+            left: -50%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top right, rgba(252, 211, 77, 0.1), rgba(251, 191, 36, 0.1));
+            animation-delay: -10s;
+        }
+        @keyframes float {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        .container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-bottom: 120px;
+        }
+        .content {
+            width: 100%;
+            max-width: 1200px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .logo {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            margin: 0 auto 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            object-fit: cover;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 20px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 1.3rem;
+            color: #ccc;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.8;
+        }
+        .subtitle .highlight {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+        .btn-buy {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+            color: white;
+            padding: 16px 35px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-buy:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(34, 197, 94, 0.5);
+        }
+        .search-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .search-card h2 {
+            color: #fbbf24;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .search-form {
+            display: flex;
+            gap: 15px;
+        }
+        .search-form input {
+            flex: 1;
+            padding: 18px 25px;
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .search-form input:focus {
+            outline: none;
+            border-color: #fbbf24;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+        }
+        .search-form input::placeholder {
+            color: #888;
+            letter-spacing: normal;
+        }
+        .btn-search {
+            padding: 18px 35px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(251, 191, 36, 0.4);
+        }
+        .btn-search:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Result Views */
+        .result-card {
+            display: none;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            margin: 30px auto 0;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        .result-card.show { display: block; }
+        
+        .voucher-found {
+            text-align: center;
+        }
+        .voucher-found h3 {
+            color: #22c55e;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+        }
+        .voucher-info {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .voucher-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .voucher-info-row:last-child { border-bottom: none; }
+        .voucher-info-row .label { color: #aaa; }
+        .voucher-info-row .value { color: white; font-weight: 600; }
+        .voucher-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #fbbf24;
+            margin: 20px 0;
+        }
+        .voucher-status {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .status-active {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .status-used {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(107, 114, 128, 0.3);
+        }
+        .status-expired {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .voucher-notfound {
+            text-align: center;
+        }
+        .voucher-notfound h3 {
+            color: #ef4444;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .voucher-notfound p {
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        
+        .btn-back {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 25px;
+            color: #888;
+            background: linear-gradient(to top, rgba(15, 12, 41, 0.9), transparent);
+        }
+        footer p { margin: 5px 0; }
+        
+        /* API Response (hidden) */
+        .api-response {
+            font-family: monospace;
+            font-size: 16px;
+            padding: 10px;
+            color: black;
+        }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .subtitle { font-size: 1.1rem; }
+            .search-form { flex-direction: column; }
+            .search-card, .result-card { padding: 25px; }
+            .logo { width: 100px; height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="bg-circle bg-circle-1"></div>
+        <div class="bg-circle bg-circle-2"></div>
+    </div>
+
+    <!-- API Response (for ?card= query) -->
+    <div class="api-response" id="apiResponse" style="display:none"></div>
+
+    <div class="container" id="mainContainer">
+        <div class="content">
+            <!-- Header (shown only in search view) -->
+            <div class="header" id="headerSection">
+                <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר" class="logo">
+                <h1>מערכת בדיקת שוברים</h1>
+                <p class="subtitle">
+                    ברוכים הבאים למערכת בדיקת יתרת השוברים של משתלת <span class="highlight">"שפת המדבר"</span> ועגלת הקפה <span class="highlight">"גיתיתה"</span>
+                </p>
+                <a href="/" class="btn-buy">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    רכישת שובר חדש
+                </a>
+            </div>
+
+            <!-- Search Card -->
+            <div class="search-card" id="searchCard">
+                <h2>🔍 חיפוש שובר</h2>
+                <form class="search-form" id="searchForm">
+                    <input type="text" id="voucherNumber" placeholder="הזן מספר שובר (13 ספרות)" maxlength="13" pattern="\d{13}">
+                    <button type="submit" class="btn-search" id="searchBtn">חיפוש</button>
+                </form>
+            </div>
+
+            <!-- Voucher Found -->
+            <div class="result-card" id="foundCard">
+                <div class="voucher-found">
+                    <h3>✅ שובר נמצא!</h3>
+                    <div class="voucher-status" id="voucherStatus"></div>
+                    <div class="voucher-amount" id="voucherAmount"></div>
+                    <div class="voucher-info">
+                        <div class="voucher-info-row">
+                            <span class="label">מספר שובר</span>
+                            <span class="value" id="voucherNum"></span>
+                        </div>
+                        <div class="voucher-info-row">
+                            <span class="label">סכום מקורי</span>
+                            <span class="value" id="originalAmount"></span>
+                        </div>
+                        <div class="voucher-info-row">
+                            <span class="label">יתרה</span>
+                            <span class="value" id="remainingAmount"></span>
+                        </div>
+                        <div class="voucher-info-row">
+                            <span class="label">תוקף עד</span>
+                            <span class="value" id="expiryDate"></span>
+                        </div>
+                    </div>
+                    <button class="btn-back" onclick="backToSearch()">חיפוש שובר נוסף</button>
+                </div>
+            </div>
+
+            <!-- Voucher Not Found -->
+            <div class="result-card" id="notFoundCard">
+                <div class="voucher-notfound">
+                    <h3>❌ שובר לא נמצא</h3>
+                    <p>מספר השובר <strong id="searchedNumber"></strong> לא נמצא במערכת.</p>
+                    <p>אנא ודא שהזנת את המספר הנכון.</p>
+                    <button class="btn-back" onclick="backToSearch()">נסה שוב</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>משתלת "שפת המדבר" ועגלת הקפה "גיתיתה"</p>
+        <p>גיתית, בקעת הירדן | 055-6822072</p>
+    </footer>
+
+    <script>
+        const API = '/api';
+
+        // Check for API query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const cardQuery = urlParams.get('card');
+
+        if (cardQuery) {
+            // API mode - return true/false
+            document.getElementById('mainContainer').style.display = 'none';
+            document.querySelector('footer').style.display = 'none';
+            checkVoucherAPI(cardQuery);
+        }
+
+        async function checkVoucherAPI(number) {
+            try {
+                const res = await fetch(`${API}/vouchers/check?card=${number}`);
+                const result = await res.text();
+                document.getElementById('apiResponse').style.display = 'block';
+                document.getElementById('apiResponse').textContent = result;
+            } catch (error) {
+                document.getElementById('apiResponse').style.display = 'block';
+                document.getElementById('apiResponse').textContent = 'false';
+            }
+        }
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const number = document.getElementById('voucherNumber').value.trim();
+            if (!number) return;
+            
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.textContent = 'מחפש...';
+            
+            try {
+                const res = await fetch(`${API}/vouchers/search?number=${number}`);
+                const data = await res.json();
+                
+                if (data.found) {
+                    showVoucher(data.voucher);
+                } else {
+                    showNotFound(number);
+                }
+            } catch (error) {
+                alert('שגיאה בחיפוש שובר');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'חיפוש';
+            }
+        });
+
+        function showVoucher(voucher) {
+            document.getElementById('headerSection').style.display = 'none';
+            document.getElementById('searchCard').style.display = 'none';
+            document.getElementById('notFoundCard').classList.remove('show');
+            document.getElementById('foundCard').classList.add('show');
+            
+            const isExpired = voucher.expiry_date && new Date(voucher.expiry_date) < new Date();
+            const statusEl = document.getElementById('voucherStatus');
+            
+            if (voucher.status === 'used' || voucher.remaining_amount <= 0) {
+                statusEl.textContent = 'נוצל במלואו';
+                statusEl.className = 'voucher-status status-used';
+            } else if (isExpired) {
+                statusEl.textContent = 'פג תוקף';
+                statusEl.className = 'voucher-status status-expired';
+            } else {
+                statusEl.textContent = 'פעיל';
+                statusEl.className = 'voucher-status status-active';
+            }
+            
+            document.getElementById('voucherAmount').textContent = `₪${parseFloat(voucher.remaining_amount).toLocaleString()}`;
+            document.getElementById('voucherNum').textContent = voucher.voucher_number;
+            document.getElementById('originalAmount').textContent = `₪${parseFloat(voucher.original_amount).toLocaleString()}`;
+            document.getElementById('remainingAmount').textContent = `₪${parseFloat(voucher.remaining_amount).toLocaleString()}`;
+            document.getElementById('expiryDate').textContent = voucher.expiry_date ? new Date(voucher.expiry_date).toLocaleDateString('he-IL') : 'ללא הגבלה';
+        }
+
+        function showNotFound(number) {
+            document.getElementById('headerSection').style.display = 'none';
+            document.getElementById('searchCard').style.display = 'none';
+            document.getElementById('foundCard').classList.remove('show');
+            document.getElementById('notFoundCard').classList.add('show');
+            document.getElementById('searchedNumber').textContent = number;
+        }
+
+        function backToSearch() {
+            document.getElementById('headerSection').style.display = 'block';
+            document.getElementById('searchCard').style.display = 'block';
+            document.getElementById('foundCard').classList.remove('show');
+            document.getElementById('notFoundCard').classList.remove('show');
+            document.getElementById('voucherNumber').value = '';
+        }
+
+        // Allow only numbers in input
+        document.getElementById('voucherNumber').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+</body>
+</html>

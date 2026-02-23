@@ -1,5 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+
+const authRoutes = require('./routes/auth.routes');
+const usersRoutes = require('./routes/users.routes');
+const vouchersRoutes = require('./routes/vouchers.routes');
 const purchaseRoutes = require('./routes/purchase.routes');
 const voucherRoutes = require('./routes/voucher.routes');
 
@@ -7,10 +13,20 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+// Static files for admin panel
+app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
 
 // Routes
+app.use('/auth', authRoutes);
+app.use('/users', usersRoutes);
+app.use('/vouchers', vouchersRoutes);
 app.use('/purchase', purchaseRoutes);
 app.use('/voucher', voucherRoutes);
 
