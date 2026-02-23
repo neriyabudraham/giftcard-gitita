@@ -4,11 +4,136 @@ const purchaseService = require('../services/purchase.service');
 const voucherService = require('../services/voucher.service');
 const emailService = require('../services/email.service');
 
+// Save purchase data (before payment)
+router.post('/save', async (req, res, next) => {
+    try {
+        const purchaseData = req.body;
+
+        if (!purchaseData.voucherId || !purchaseData.amount) {
+            return res.status(400).json({
+                error: true,
+                message: 'חסרים פרטים נדרשים'
+            });
+        }
+
+        const purchase = await purchaseService.savePurchase(purchaseData);
+
+        res.json({
+            success: true,
+            purchaseId: purchase.id,
+            voucherId: purchase.voucherId
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Verify payment status
+router.get('/verify/:voucherId', async (req, res, next) => {
+    try {
+        const { voucherId } = req.params;
+
+        // Check if payment was verified (via webhook or polling)
+        const purchase = await purchaseService.getPurchaseByVoucherId(voucherId);
+
+        if (!purchase) {
+            return res.json({ verified: false });
+        }
+
+        if (purchase.status === 'completed') {
+            return res.json({
+                verified: true,
+                voucherImageUrl: `/voucher/${voucherId}/image`,
+                orderId: purchase.orderId
+            });
+        }
+
+        // Poll external verification (base44)
+        const externalVerified = await purchaseService.checkExternalVerification(voucherId);
+        
+        if (externalVerified) {
+            // Update status and generate voucher
+            await purchaseService.markAsCompleted(voucherId);
+            
+            // Generate voucher image
+            const voucherImage = await voucherService.generateVoucherImage({
+                voucherNumber: voucherId,
+                amount: purchase.amount,
+                recipientName: `${purchase.recipientFirstName} ${purchase.recipientLastName}`,
+                greeting: purchase.greeting,
+                expiryDate: purchaseService.getExpiryDate()
+            });
+
+            await voucherService.saveVoucherImage(voucherId, voucherImage);
+
+            // Send email
+            await emailService.sendVoucherEmail({
+                to: purchase.buyerEmail,
+                buyerName: `${purchase.buyerFirstName} ${purchase.buyerLastName}`,
+                voucherNumber: voucherId,
+                amount: purchase.amount,
+                voucherId: voucherId
+            });
+
+            return res.json({
+                verified: true,
+                voucherImageUrl: `/voucher/${voucherId}/image`
+            });
+        }
+
+        res.json({ verified: false });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Webhook for payment confirmation (from meshulam or n8n)
+router.post('/webhook', async (req, res, next) => {
+    try {
+        const { voucherId, transactionId, status } = req.body;
+
+        if (status === 'success' || status === 'approved') {
+            const purchase = await purchaseService.getPurchaseByVoucherId(voucherId);
+            
+            if (purchase && purchase.status !== 'completed') {
+                await purchaseService.markAsCompleted(voucherId, transactionId);
+
+                // Generate voucher image
+                const voucherImage = await voucherService.generateVoucherImage({
+                    voucherNumber: voucherId,
+                    amount: purchase.amount,
+                    recipientName: `${purchase.recipientFirstName} ${purchase.recipientLastName}`,
+                    greeting: purchase.greeting,
+                    expiryDate: purchaseService.getExpiryDate()
+                });
+
+                await voucherService.saveVoucherImage(voucherId, voucherImage);
+
+                // Send email
+                await emailService.sendVoucherEmail({
+                    to: purchase.buyerEmail,
+                    buyerName: `${purchase.buyerFirstName} ${purchase.buyerLastName}`,
+                    voucherNumber: voucherId,
+                    amount: purchase.amount,
+                    voucherId: voucherId
+                });
+            }
+        }
+
+        res.json({ success: true });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Legacy endpoint for full purchase (if needed)
 router.post('/', async (req, res, next) => {
     try {
         const { voucher, buyer, recipient, payment } = req.body;
 
-        // Validate required fields
         if (!voucher?.amount || !buyer?.name || !buyer?.email || !recipient?.name) {
             return res.status(400).json({
                 error: true,
@@ -16,26 +141,12 @@ router.post('/', async (req, res, next) => {
             });
         }
 
-        // TODO: Process payment (integrate with payment provider)
-        // For now, simulate successful payment
-        const paymentResult = await purchaseService.processPayment(payment, voucher.price);
-
-        if (!paymentResult.success) {
-            return res.status(400).json({
-                error: true,
-                message: paymentResult.message || 'התשלום נכשל'
-            });
-        }
-
-        // Create purchase record
         const purchase = await purchaseService.createPurchase({
             voucher,
             buyer,
-            recipient,
-            paymentId: paymentResult.transactionId
+            recipient
         });
 
-        // Generate voucher image
         const voucherImage = await voucherService.generateVoucherImage({
             voucherNumber: purchase.voucherNumber,
             amount: voucher.amount,
@@ -44,10 +155,8 @@ router.post('/', async (req, res, next) => {
             expiryDate: purchase.expiryDate
         });
 
-        // Save voucher image
         await voucherService.saveVoucherImage(purchase.voucherId, voucherImage);
 
-        // Send email with voucher
         await emailService.sendVoucherEmail({
             to: buyer.email,
             buyerName: buyer.name,
@@ -63,7 +172,7 @@ router.post('/', async (req, res, next) => {
             voucherNumber: purchase.voucherNumber,
             amount: voucher.amount,
             expiryDate: purchase.expiryDate,
-            voucherImageUrl: `/api/voucher/${purchase.voucherId}/image`
+            voucherImageUrl: `/voucher/${purchase.voucherId}/image`
         });
 
     } catch (error) {

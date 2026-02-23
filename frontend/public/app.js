@@ -1,102 +1,137 @@
-// Global state
-const APP_STATE = {
-    selectedVoucher: null,
-    apiBase: '/api'
-};
+// Carousel state
+let currentImageIndex = 0;
+const totalImages = 5;
+let carouselInterval;
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-    initVoucherSelection();
-    loadSelectedVoucher();
+    initCarousel();
+    initFadeInAnimations();
+    initSmoothScroll();
 });
 
-// Voucher selection
-function initVoucherSelection() {
-    const selectButtons = document.querySelectorAll('.select-voucher');
+// Carousel functions
+function initCarousel() {
+    carouselInterval = setInterval(() => {
+        nextImage();
+    }, 4000);
+}
+
+function goToImage(index) {
+    const images = document.querySelectorAll('.carousel-image');
+    const indicators = document.querySelectorAll('.carousel-indicator');
     
-    selectButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const card = e.target.closest('.voucher-card');
-            const amount = card.dataset.amount;
-            const price = card.dataset.price;
-            
-            selectVoucher(amount, price);
+    images[currentImageIndex].classList.remove('active');
+    indicators[currentImageIndex].classList.remove('active');
+    
+    currentImageIndex = index;
+    
+    images[currentImageIndex].classList.add('active');
+    indicators[currentImageIndex].classList.add('active');
+    
+    // Reset interval
+    clearInterval(carouselInterval);
+    carouselInterval = setInterval(() => {
+        nextImage();
+    }, 4000);
+}
+
+function nextImage() {
+    goToImage((currentImageIndex + 1) % totalImages);
+}
+
+function prevImage() {
+    goToImage((currentImageIndex - 1 + totalImages) % totalImages);
+}
+
+// FAQ toggle
+function toggleFaq(element) {
+    const isActive = element.classList.contains('active');
+    
+    // Close all FAQs
+    document.querySelectorAll('.faq-question').forEach(q => {
+        q.classList.remove('active');
+        q.nextElementSibling.style.maxHeight = '0';
+    });
+    
+    // Open clicked one if it wasn't active
+    if (!isActive) {
+        element.classList.add('active');
+        element.nextElementSibling.style.maxHeight = '150px';
+    }
+}
+
+// Fade in animations
+function initFadeInAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px"
+    });
+
+    document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+}
+
+// Smooth scroll for anchor links
+function initSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     });
 }
 
-function selectVoucher(amount, price) {
-    APP_STATE.selectedVoucher = { amount, price };
-    localStorage.setItem('selectedVoucher', JSON.stringify(APP_STATE.selectedVoucher));
-    window.location.href = 'payment.html';
+// Voucher selection
+function selectVoucher(amount, productName) {
+    const voucherId = generateVoucherId();
+    
+    // Save to localStorage
+    localStorage.setItem('selectedVoucher', JSON.stringify({
+        amount,
+        productName,
+        voucherId
+    }));
+    
+    // Navigate to form
+    window.location.href = `payment.html?amount=${amount}&id=${voucherId}`;
 }
 
-function loadSelectedVoucher() {
-    const saved = localStorage.getItem('selectedVoucher');
-    if (saved) {
-        APP_STATE.selectedVoucher = JSON.parse(saved);
-        updateSummary();
-    }
+// Generate voucher ID
+function generateVoucherId() {
+    return Math.floor(Math.random() * 10000000000000).toString().padStart(13, '0');
 }
 
-function updateSummary() {
-    const amountEl = document.getElementById('summaryAmount');
-    const totalEl = document.getElementById('summaryTotal');
+// Utility: Format phone number
+function formatPhone(value) {
+    let numbers = value.replace(/\D/g, '');
     
-    if (amountEl && APP_STATE.selectedVoucher) {
-        amountEl.textContent = `₪${APP_STATE.selectedVoucher.amount}`;
+    if (numbers.startsWith('972') && numbers.length >= 10 && numbers.length <= 12) {
+        numbers = '0' + numbers.substring(3);
     }
-    if (totalEl && APP_STATE.selectedVoucher) {
-        totalEl.textContent = `₪${APP_STATE.selectedVoucher.price}`;
+    
+    if (numbers.length === 9 && !numbers.startsWith('0')) {
+        numbers = '0' + numbers;
     }
+    
+    if (numbers.length > 10) {
+        numbers = numbers.substring(0, 10);
+    }
+    
+    if (numbers.length === 10) {
+        return numbers.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+    }
+    
+    return numbers;
 }
 
-// Utility functions
-function formatCardNumber(value) {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || '';
-    const parts = [];
-    
-    for (let i = 0, len = match.length; i < len; i += 4) {
-        parts.push(match.substring(i, i + 4));
-    }
-    
-    return parts.length ? parts.join(' ') : value;
-}
-
-function formatExpiry(value) {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-        return v.substring(0, 2) + '/' + v.substring(2, 4);
-    }
-    return v;
-}
-
-// API calls
-async function createPurchase(data) {
-    const response = await fetch(`${APP_STATE.apiBase}/purchase`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'שגיאה ביצירת הזמנה');
-    }
-    
-    return response.json();
-}
-
-async function getVoucherImage(voucherId) {
-    const response = await fetch(`${APP_STATE.apiBase}/voucher/${voucherId}/image`);
-    
-    if (!response.ok) {
-        throw new Error('שגיאה בטעינת השובר');
-    }
-    
-    return response.blob();
-}
+// API base URL
+const API_BASE = '/api';

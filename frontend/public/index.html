@@ -4,84 +4,181 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>שוברי מתנה - שפת המדבר</title>
-    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo-container">
-                <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר" class="logo">
-            </div>
-            <h1 class="title">שוברי מתנה</h1>
-            <p class="subtitle">שפת המדבר - חוויה של יופי וטבע</p>
-        </header>
+    <div class="voucher-site-wrapper">
+        <main>
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-content">
+                    <div class="logo-container">
+                        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/e8802db8b_.jpg" alt="לוגו שפת המדבר">
+                    </div>
+                    <h1>שוברי מתנה מושלמים</h1>
+                    <h2 class="main-subtitle">למי שמגיע להם פינוק</h2>
+                    <h2 class="main-subtitle">שפת המדבר - משתלה קסומה ועגלת קפה מפנקת!</h2>
+                    <p class="subtitle">
+                        <strong>מתנה שכולה טבע, טעמים ונופים</strong>, בלב הקסם של בקעת הירדן.
+                    </p>
+                    <a href="#vouchers" class="cta-button hero-cta">בחר את השובר המושלם</a>
+                </div>
+            </section>
 
-        <main class="main-content">
-            <section class="vouchers-section">
-                <h2 class="section-title">בחרו את השובר המושלם</h2>
-                <div class="vouchers-grid">
-                    <!-- Voucher cards will be populated here -->
-                    <div class="voucher-card" data-amount="100" data-price="100">
-                        <div class="voucher-badge">פופולרי</div>
-                        <div class="voucher-amount">₪100</div>
-                        <div class="voucher-description">שובר מתנה בסיסי</div>
-                        <button class="btn btn-primary select-voucher">בחירה</button>
-                    </div>
-                    
-                    <div class="voucher-card featured" data-amount="200" data-price="200">
-                        <div class="voucher-badge">מומלץ</div>
-                        <div class="voucher-amount">₪200</div>
-                        <div class="voucher-description">שובר מתנה מורחב</div>
-                        <button class="btn btn-primary select-voucher">בחירה</button>
-                    </div>
-                    
-                    <div class="voucher-card" data-amount="300" data-price="300">
-                        <div class="voucher-badge">פרימיום</div>
-                        <div class="voucher-amount">₪300</div>
-                        <div class="voucher-description">שובר מתנה מפנק</div>
-                        <button class="btn btn-primary select-voucher">בחירה</button>
-                    </div>
-                    
-                    <div class="voucher-card" data-amount="500" data-price="500">
-                        <div class="voucher-badge">VIP</div>
-                        <div class="voucher-amount">₪500</div>
-                        <div class="voucher-description">חוויה מלאה</div>
-                        <button class="btn btn-primary select-voucher">בחירה</button>
+            <!-- Image Carousel Section -->
+            <section class="carousel-section fade-in">
+                <div class="container">
+                    <div class="carousel-container">
+                        <div class="carousel-wrapper">
+                            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/5f2cc82c5_WhatsAppImage2025-08-21at120950.jpg" alt="תמונה 1" class="carousel-image active">
+                            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/49b0eaeb7_WhatsAppImage2025-08-21at120955.jpg" alt="תמונה 2" class="carousel-image">
+                            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/415c3261c_WhatsAppImage2025-08-21at121006.jpeg" alt="תמונה 3" class="carousel-image">
+                            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/a00e7ce85_WhatsAppImage2025-08-21at121016.jpg" alt="תמונה 4" class="carousel-image">
+                            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/342b3000e_WhatsAppImage2025-08-21at121029.jpg" alt="תמונה 5" class="carousel-image">
+                            
+                            <button class="carousel-nav prev" onclick="prevImage()">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                            <button class="carousel-nav next" onclick="nextImage()">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            
+                            <div class="carousel-indicators">
+                                <div class="carousel-indicator active" onclick="goToImage(0)"></div>
+                                <div class="carousel-indicator" onclick="goToImage(1)"></div>
+                                <div class="carousel-indicator" onclick="goToImage(2)"></div>
+                                <div class="carousel-indicator" onclick="goToImage(3)"></div>
+                                <div class="carousel-indicator" onclick="goToImage(4)"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section class="info-section">
-                <h2 class="section-title">איך זה עובד?</h2>
-                <div class="steps-grid">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div class="step-title">בחרו שובר</div>
-                        <div class="step-description">בחרו את סכום השובר המתאים לכם</div>
+            <!-- Pain Section -->
+            <section class="section fade-in">
+                <div class="container">
+                    <h2>מתקשים למצוא את המתנה המושלמת?</h2>
+                    <p class="section-subtitle">בעולם מלא בחפצים, החוויות הן אלו שנשארות בזיכרון. במקום עוד מתנה שתעלה אבק, העניקו רגעים של שלווה, טעם ויופי. שובר המתנה שלנו הוא לא רק כסף, הוא כרטיס כניסה לעולם של חוויות.</p>
+                </div>
+            </section>
+
+            <!-- Vouchers Section -->
+            <section id="vouchers" class="section fade-in">
+                <div class="container">
+                    <h2>בחר את החוויה שלך</h2>
+                    <div class="vouchers-grid">
+                        <div class="voucher-card with-background-coffee">
+                            <div class="voucher-icon">☕</div>
+                            <h3>קפה מאפה זוגי + עציץ</h3>
+                            <p class="description">חוויה מושלמת של קפה טרי, מאפה טעים ועציץ יפהפה.</p>
+                            <div class="price-display">₪95</div>
+                            <button onclick="selectVoucher('95', 'קפה מאפה זוגי + עציץ')" class="cta-button">רכישה מיידית</button>
+                        </div>
+                        
+                        <div class="voucher-card with-background-breakfast">
+                            <div class="voucher-icon">🍳</div>
+                            <h3>ארוחת בוקר זוגית</h3>
+                            <p class="description">ארוחת בוקר מפנקת וטעימה לזוג מול הנוף הקסום.</p>
+                            <div class="price-display">₪188</div>
+                            <button onclick="selectVoucher('188', 'ארוחת בוקר זוגית')" class="cta-button">רכישה מיידית</button>
+                        </div>
+                        
+                        <div class="voucher-card with-background-100">
+                            <div class="voucher-icon">🎁</div>
+                            <h3>שובר 100₪</h3>
+                            <p class="description">פינוק בעגלת הקפה ו/או צמחים יפים במשתלה בשווי 100₪ - משהו משמח שכיף לקבל ;)</p>
+                            <div class="price-display">₪100</div>
+                            <button onclick="selectVoucher('100', 'שובר 100₪')" class="cta-button">רכישה מיידית</button>
+                        </div>
+                        
+                        <div class="voucher-card with-background-300">
+                            <div class="voucher-icon">💎</div>
+                            <h3>שובר 300₪</h3>
+                            <p class="description">פינוק משודרג בעגלת הקפה ו/או במשתלה בשווי 300₪ - מתנה מעולה למי שמגיע להם משהו טוב!</p>
+                            <div class="price-display">₪300</div>
+                            <button onclick="selectVoucher('300', 'שובר 300₪')" class="cta-button">רכישה מיידית</button>
+                        </div>
+                        
+                        <div class="voucher-card premium with-background-600">
+                            <div class="voucher-icon">👑</div>
+                            <h3>שובר 600₪</h3>
+                            <p class="description">השובר המושלם לחווייה כוללת של צמחים יפים, כלים, אוכל טוב וזמן איכות בשפת המדבר💜</p>
+                            <div class="price-display">₪600</div>
+                            <button onclick="selectVoucher('600', 'שובר 600₪')" class="cta-button">רכישה מיידית</button>
+                        </div>
                     </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div class="step-title">מלאו פרטים</div>
-                        <div class="step-description">הזינו את פרטי המקבל והברכה האישית</div>
+                </div>
+            </section>
+
+            <!-- Vision Section -->
+            <section class="section fade-in">
+                <div class="container">
+                    <h2>עצמו עיניים לרגע</h2>
+                    <p class="section-subtitle">דמיינו את יקיריכם...</p>
+                    <div class="vision-list">
+                        <div class="vision-item"><p>נהנים מקפה איכותי מול נוף מדברי עוצר נשימה ☀️</p></div>
+                        <div class="vision-item"><p>בוחרים בעצמם את הצמח המושלם שיוסיף חיים וצבע לביתם 🌿</p></div>
+                        <div class="vision-item"><p>יוצרים זיכרון מתוק של בוקר רגוע, רחוק מהמולת היום-יום🧘</p></div>
                     </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div class="step-title">שלמו</div>
-                        <div class="step-description">תשלום מאובטח בכרטיס אשראי</div>
+                </div>
+            </section>
+
+            <!-- FAQ Section -->
+            <section class="section fade-in">
+                <div class="container">
+                    <h2>שאלות נפוצות</h2>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">היכן ניתן לממש את השובר?</div>
+                            <div class="faq-answer">
+                                <p>השובר ניתן למימוש גם במשתלת "שפת המדבר" וגם בעגלת הקפה "גיתיתה", לבחירתכם המלאה.</p>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">מה תוקף השובר?</div>
+                            <div class="faq-answer">
+                                <p>השובר תקף למשך 12 חודשים מלאים מיום הרכישה, כך שיש מספיק זמן לתכנן את הביקור המושלם.</p>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">איך מקבלים את השובר לאחר הרכישה?</div>
+                            <div class="faq-answer">
+                                <p>לאחר התשלום, השובר הדיגיטלי יהיה זמין להורדה ישירות מהאתר, וגם יישלח אליכם למייל.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="step">
-                        <div class="step-number">4</div>
-                        <div class="step-title">קבלו</div>
-                        <div class="step-description">הורידו את השובר ישירות + קבלה במייל</div>
+                </div>
+            </section>
+
+            <!-- Contact Section -->
+            <section class="section fade-in">
+                <div class="container">
+                    <div class="contact-card">
+                        <h2>אנחנו כאן לכל שאלה</h2>
+                        <p class="section-subtitle" style="font-size: 1.1rem; margin-bottom: 30px;">מוזמנים ליצור קשר עם נתנאל</p>
+                        <div class="contact-grid">
+                            <div class="contact-item"><span class="icon">📞</span><a href="tel:0556822072">055-6822072</a></div>
+                            <div class="contact-item"><span class="icon">📍</span><span>גיתית, בקעת הירדן</span></div>
+                        </div>
+                        <div class="social-links">
+                            <a href="https://www.facebook.com/profile.php?id=100082991059424" target="_blank" rel="noopener noreferrer" class="social-link facebook-link">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            </a>
+                            <a href="https://www.instagram.com/sfat.hamidbar/" target="_blank" rel="noopener noreferrer" class="social-link instagram-link">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4c2.21 0 4 1.791 4 4s-1.79 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </section>
         </main>
 
-        <footer class="footer">
-            <p>&copy; 2026 שפת המדבר - כל הזכויות שמורות</p>
-        </footer>
+        <!-- WhatsApp Float Button -->
+        <a href="https://wa.me/972556822072?text=היי, יש לי שאלה לגבי שוברי המתנה" class="whatsapp-float" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488z"></path></svg>
+        </a>
     </div>
 
     <script src="app.js"></script>

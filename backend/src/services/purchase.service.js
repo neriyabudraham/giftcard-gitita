@@ -3,6 +3,9 @@ const { v4: uuidv4 } = require('uuid');
 // In-memory storage (replace with database in production)
 const purchases = new Map();
 
+// External verification URL (base44)
+const VERIFICATION_URL = 'https://base44.app/api/apps/68a70851bac1fc26b58e4900/entities/Voucher';
+
 function generateVoucherNumber() {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -15,11 +18,70 @@ function getExpiryDate() {
     return date.toLocaleDateString('he-IL');
 }
 
-async function processPayment(paymentDetails, amount) {
-    // TODO: Integrate with actual payment provider (e.g., Tranzila, CardCom, etc.)
-    // For now, simulate payment processing
+async function savePurchase(data) {
+    const id = uuidv4();
+    
+    const purchase = {
+        id,
+        voucherId: data.voucherId,
+        amount: data.amount,
+        buyerFirstName: data.buyerFirstName,
+        buyerLastName: data.buyerLastName,
+        buyerPhone: data.buyerPhone,
+        buyerEmail: data.buyerEmail,
+        recipientFirstName: data.recipientFirstName,
+        recipientLastName: data.recipientLastName,
+        recipientPhone: data.recipientPhone,
+        greeting: data.greeting,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    };
 
-    // Basic validation
+    purchases.set(data.voucherId, purchase);
+    
+    return purchase;
+}
+
+async function getPurchaseByVoucherId(voucherId) {
+    return purchases.get(voucherId);
+}
+
+async function markAsCompleted(voucherId, transactionId = null) {
+    const purchase = purchases.get(voucherId);
+    
+    if (purchase) {
+        purchase.status = 'completed';
+        purchase.completedAt = new Date().toISOString();
+        if (transactionId) {
+            purchase.transactionId = transactionId;
+        }
+        purchases.set(voucherId, purchase);
+    }
+    
+    return purchase;
+}
+
+async function checkExternalVerification(voucherId) {
+    try {
+        const response = await fetch(
+            `${VERIFICATION_URL}?status=active&voucher_number=${voucherId}`
+        );
+        
+        if (!response.ok) {
+            return false;
+        }
+        
+        const result = await response.json();
+        return result && result.length > 0;
+        
+    } catch (error) {
+        console.error('External verification error:', error);
+        return false;
+    }
+}
+
+async function processPayment(paymentDetails, amount) {
+    // Placeholder for actual payment processing
     if (!paymentDetails.cardNumber || !paymentDetails.expiry || !paymentDetails.cvv) {
         return {
             success: false,
@@ -27,10 +89,8 @@ async function processPayment(paymentDetails, amount) {
         };
     }
 
-    // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Simulate successful payment
     return {
         success: true,
         transactionId: `TXN-${uuidv4().substring(0, 8).toUpperCase()}`
@@ -63,7 +123,12 @@ async function getPurchase(orderId) {
 }
 
 module.exports = {
+    savePurchase,
+    getPurchaseByVoucherId,
+    markAsCompleted,
+    checkExternalVerification,
     processPayment,
     createPurchase,
-    getPurchase
+    getPurchase,
+    getExpiryDate
 };

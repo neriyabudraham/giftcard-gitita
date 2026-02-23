@@ -4,69 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>תודה על הרכישה - שפת המדבר</title>
-    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header header-small">
-            <div class="logo-container small">
-                <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר" class="logo">
+    <div class="thank-you-wrapper">
+        <div class="thank-you-container">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-container">
+                <svg class="loading-spinner" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" transform="rotate(-90 12 12)">
+                        <animate attributeName="stroke-dashoffset" values="31.416;0;31.416" dur="1.5s" repeatCount="indefinite"/>
+                    </circle>
+                </svg>
+                <p class="loading-text">מאמתים את התשלום, נא להמתין...</p>
+                <p class="thank-you-subtitle">זה עשוי לקחת מספר רגעים. ניתן לסגור את החלון, פרטי השובר יישלחו אליכם במייל.</p>
+                <button onclick="window.history.back()" class="btn btn-back" style="margin-top: 24px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    חזרה לפרטים
+                </button>
             </div>
-        </header>
 
-        <main class="main-content thank-you-content">
-            <div class="success-container">
-                <div class="success-icon">✓</div>
-                <h1 class="success-title">תודה על הרכישה!</h1>
-                <p class="success-subtitle">השובר שלך מוכן להורדה</p>
-                
-                <div class="voucher-preview" id="voucherPreview">
-                    <img src="" alt="תצוגה מקדימה של השובר" id="voucherImage">
+            <!-- Success State -->
+            <div id="successState" class="hidden">
+                <div class="success-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
                 </div>
+
+                <h1 class="thank-you-title">תודה רבה!</h1>
+                <p class="thank-you-subtitle">
+                    התשלום בוצע בהצלחה. השובר שלך מוכן!
+                    <br>
+                    פרטי השובר נשלחו אליך למייל.
+                </p>
+
+                <div class="voucher-details">
+                    <div class="voucher-id">
+                        מספר שובר: <span id="displayVoucherId">-</span>
+                    </div>
+                    <div class="voucher-amount-display" id="displayProductName">-</div>
+                    <div class="voucher-recipient">
+                        שם הרוכש: <span id="displayBuyerName">-</span>
+                    </div>
+                    <div class="voucher-recipient">
+                        מקבל השובר: <span id="displayRecipientName">-</span>
+                    </div>
+                    <div class="voucher-id" style="margin-top: 16px;">
+                        <strong>תקף עד: <span id="displayExpiry">-</span></strong>
+                    </div>
+                </div>
+
+                <a href="#" id="downloadBtn" class="btn btn-download-voucher">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    הורד את השובר שלך
+                </a>
 
                 <div class="action-buttons">
-                    <button class="btn btn-primary btn-large" id="downloadBtn">
+                    <a href="index.html" class="btn btn-home">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
                         </svg>
-                        הורדת השובר
-                    </button>
+                        חזרה לעמוד הראשי
+                    </a>
                 </div>
-
-                <div class="confirmation-details">
-                    <h3>פרטי ההזמנה</h3>
-                    <div class="detail-row">
-                        <span class="detail-label">מספר הזמנה:</span>
-                        <span class="detail-value" id="orderNumber">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">מספר שובר:</span>
-                        <span class="detail-value" id="voucherNumber">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">סכום:</span>
-                        <span class="detail-value" id="voucherAmount">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">תוקף עד:</span>
-                        <span class="detail-value" id="voucherExpiry">-</span>
-                    </div>
-                </div>
-
-                <div class="email-notice">
-                    <p>📧 העתק של השובר נשלח גם לכתובת המייל שהזנת</p>
-                </div>
-
-                <a href="index.html" class="btn btn-secondary">רכישת שובר נוסף</a>
             </div>
-        </main>
 
-        <footer class="footer">
-            <p>&copy; 2026 שפת המדבר - כל הזכויות שמורות</p>
-        </footer>
+            <!-- Error State -->
+            <div id="errorState" class="hidden loading-container">
+                <h1 class="thank-you-title" style="color: #ff6b6b;">שגיאת אימות</h1>
+                <p class="thank-you-subtitle">לא הצלחנו לאמת את התשלום באופן אוטומטי. אנא בדוק את המייל שלך בדקות הקרובות או פנה לתמיכה אם השובר לא התקבל.</p>
+                <a href="index.html" class="btn btn-home" style="margin-top: 24px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    חזרה לעמוד הראשי
+                </a>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>

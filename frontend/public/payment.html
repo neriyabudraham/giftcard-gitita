@@ -4,126 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>רכישת שובר - שפת המדבר</title>
-    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header header-small">
-            <a href="index.html" class="back-link">← חזרה לבחירת שובר</a>
-            <div class="logo-container small">
-                <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר" class="logo">
+    <div class="voucher-form-wrapper">
+        <div class="form-container">
+            <div class="form-header">
+                <h1 class="form-title">פרטים אישיים</h1>
+                <div class="amount-badge" id="amountBadge">שובר בסך ₪0</div>
+                <p class="form-subtitle">
+                    אנא מלא את הפרטים הבאים כדי להמשיך לתשלום
+                </p>
             </div>
-            <h1 class="title">רכישת שובר מתנה</h1>
-        </header>
 
-        <main class="main-content">
-            <div class="payment-layout">
-                <section class="form-section">
-                    <form id="purchaseForm" class="purchase-form">
-                        <div class="form-group">
-                            <h3 class="form-section-title">פרטי הרוכש</h3>
-                            
-                            <div class="input-group">
-                                <label for="buyerName">שם מלא *</label>
-                                <input type="text" id="buyerName" name="buyerName" required>
-                            </div>
-                            
-                            <div class="input-group">
-                                <label for="buyerEmail">אימייל *</label>
-                                <input type="email" id="buyerEmail" name="buyerEmail" required>
-                            </div>
-                            
-                            <div class="input-group">
-                                <label for="buyerPhone">טלפון *</label>
-                                <input type="tel" id="buyerPhone" name="buyerPhone" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <h3 class="form-section-title">פרטי מקבל המתנה</h3>
-                            
-                            <div class="input-group">
-                                <label for="recipientName">שם המקבל *</label>
-                                <input type="text" id="recipientName" name="recipientName" required>
-                            </div>
-                            
-                            <div class="input-group">
-                                <label for="greeting">ברכה אישית</label>
-                                <textarea id="greeting" name="greeting" rows="4" placeholder="כתבו ברכה אישית שתופיע על השובר..."></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <h3 class="form-section-title">פרטי תשלום</h3>
-                            
-                            <div class="input-group">
-                                <label for="cardNumber">מספר כרטיס *</label>
-                                <input type="text" id="cardNumber" name="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" required>
-                            </div>
-                            
-                            <div class="input-row">
-                                <div class="input-group">
-                                    <label for="cardExpiry">תוקף *</label>
-                                    <input type="text" id="cardExpiry" name="cardExpiry" placeholder="MM/YY" maxlength="5" required>
-                                </div>
-                                
-                                <div class="input-group">
-                                    <label for="cardCvv">CVV *</label>
-                                    <input type="text" id="cardCvv" name="cardCvv" placeholder="000" maxlength="4" required>
-                                </div>
-                            </div>
-                            
-                            <div class="input-group">
-                                <label for="cardHolder">שם בעל הכרטיס *</label>
-                                <input type="text" id="cardHolder" name="cardHolder" required>
-                            </div>
-                            
-                            <div class="input-group">
-                                <label for="cardId">תעודת זהות *</label>
-                                <input type="text" id="cardId" name="cardId" maxlength="9" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="termsAccepted" name="termsAccepted" required>
-                                <span>אני מאשר/ת את <a href="#" class="terms-link">תנאי השימוש</a></span>
-                            </label>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-large" id="submitBtn">
-                            <span class="btn-text">לתשלום</span>
-                            <span class="btn-loader hidden">מעבד...</span>
-                        </button>
-                    </form>
-                </section>
-
-                <aside class="order-summary">
-                    <div class="summary-card">
-                        <h3 class="summary-title">סיכום הזמנה</h3>
-                        <div class="summary-item">
-                            <span>שובר מתנה</span>
-                            <span id="summaryAmount">₪200</span>
-                        </div>
-                        <div class="summary-divider"></div>
-                        <div class="summary-total">
-                            <span>סה"כ לתשלום</span>
-                            <span id="summaryTotal">₪200</span>
-                        </div>
-                        <div class="summary-note">
-                            <p>✓ השובר יהיה זמין להורדה מיידית</p>
-                            <p>✓ עותק ישלח גם למייל</p>
-                            <p>✓ תוקף השובר: שנה מיום הרכישה</p>
-                        </div>
+            <form id="purchaseForm">
+                <h2 class="section-title-form">פרטי הרוכש</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">שם פרטי *</label>
+                        <input type="text" name="buyerFirstName" class="form-input" placeholder="הכנס שם פרטי" autocomplete="given-name" required>
+                        <div class="error-message" id="error-buyerFirstName"></div>
                     </div>
-                </aside>
-            </div>
-        </main>
 
-        <footer class="footer">
-            <p>&copy; 2026 שפת המדבר - כל הזכויות שמורות</p>
-        </footer>
+                    <div class="form-group">
+                        <label class="form-label">שם משפחה *</label>
+                        <input type="text" name="buyerLastName" class="form-input" placeholder="הכנס שם משפחה" autocomplete="family-name" required>
+                        <div class="error-message" id="error-buyerLastName"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">טלפון רוכש *</label>
+                        <input type="tel" name="buyerPhone" class="form-input" placeholder="050-000-0000" autocomplete="tel" required>
+                        <div class="error-message" id="error-buyerPhone"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">אימייל רוכש *</label>
+                        <input type="email" name="buyerEmail" class="form-input" placeholder="example@email.com" autocomplete="email" required>
+                        <div class="error-message" id="error-buyerEmail"></div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <h2 class="section-title-form">פרטי מקבל השובר</h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">שם פרטי *</label>
+                        <input type="text" name="recipientFirstName" class="form-input" placeholder="הכנס שם פרטי" required>
+                        <div class="error-message" id="error-recipientFirstName"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">שם משפחה *</label>
+                        <input type="text" name="recipientLastName" class="form-input" placeholder="הכנס שם משפחה" required>
+                        <div class="error-message" id="error-recipientLastName"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">טלפון מקבל השובר *</label>
+                    <input type="tel" name="recipientPhone" class="form-input" placeholder="050-000-0000" required>
+                    <div class="error-message" id="error-recipientPhone"></div>
+                </div>
+
+                <div class="greeting-section">
+                    <h3 class="greeting-title">ברכה על השובר</h3>
+                    <p class="greeting-description">
+                        כאן תוכל להוסיף ברכה אישית שתופיע על שובר המתנה
+                    </p>
+                    <textarea name="greeting" class="form-textarea" placeholder="כתוב כאן את הברכה האישית שלך...">באהבה, מכל הלב
+
+שיהיה רגע של פינוק, הפסקה של שלווה,
+או נגיעה קטנה של ירוק בעיניים ☕
+
+מקווים שתהנה מהשובר הזה בדיוק כמו שחשבנו עליך כשבחרנו אותו :)</textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-back" onclick="window.location.href='index.html'">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        חזרה
+                    </button>
+                    
+                    <button type="submit" class="btn btn-submit" id="submitBtn">
+                        <span id="btnText">לשלב הבא</span>
+                        <span id="btnLoader" class="hidden">טוען...</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Payment Modal -->
+        <div id="paymentModal" class="payment-modal-overlay hidden">
+            <div class="payment-modal">
+                <div class="payment-modal-header">
+                    <h2 class="payment-modal-title">השלמת תשלום</h2>
+                    <button class="close-button" onclick="closePaymentModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                
+                <div class="payment-iframe-container">
+                    <iframe id="paymentIframe" class="payment-iframe" title="תשלום" allow="payment"></iframe>
+                </div>
+
+                <div class="payment-instructions">
+                    לאחר השלמת התשלום, יש ללחוץ על X למעלה
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>
