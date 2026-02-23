@@ -20,7 +20,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "3946:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
