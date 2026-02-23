@@ -400,6 +400,7 @@
                 
                 if (result.success && result.paymentUrl) {
                     localStorage.setItem('purchaseId', result.purchaseId);
+                    localStorage.setItem('voucherNumber', result.voucherNumber);
                     document.getElementById('paymentIframe').src = result.paymentUrl;
                     document.getElementById('paymentModal').classList.remove('hidden');
                 } else {
@@ -416,7 +417,15 @@
         function closePaymentModal() {
             document.getElementById('paymentModal').classList.add('hidden');
             document.getElementById('paymentIframe').src = '';
-            window.location.href = '/thankyou';
+            
+            // Redirect to verification page with purchaseId
+            const purchaseId = localStorage.getItem('purchaseId');
+            const voucherNumber = localStorage.getItem('voucherNumber');
+            if (voucherNumber) {
+                window.location.href = `/thankyou?voucher=${voucherNumber}`;
+            } else {
+                window.location.href = '/thankyou';
+            }
         }
     </script>
 </body>

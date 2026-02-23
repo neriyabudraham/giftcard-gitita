@@ -20,11 +20,13 @@
             padding: 20px;
         }
         
-        .thankyou-container {
-            max-width: 600px;
+        .container {
+            max-width: 700px;
+            width: 100%;
             text-align: center;
         }
         
+        /* Success State */
         .success-icon {
             width: 120px;
             height: 120px;
@@ -49,73 +51,134 @@
             stroke-width: 3;
         }
         
+        /* Waiting State */
+        .waiting-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        .waiting-icon svg {
+            width: 50px;
+            height: 50px;
+            fill: white;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
         h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: #FFD700;
             margin-bottom: 20px;
-            animation: fadeInUp 0.6s ease-out 0.2s both;
-        }
-        
-        @keyframes fadeInUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
         
         .subtitle {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             color: #ddd;
             margin-bottom: 30px;
             line-height: 1.8;
-            animation: fadeInUp 0.6s ease-out 0.4s both;
         }
         
-        .info-card {
+        /* Voucher Card */
+        .voucher-card {
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(15px);
             border-radius: 20px;
             padding: 30px;
             border: 1px solid rgba(255,255,255,0.1);
             margin-bottom: 30px;
-            animation: fadeInUp 0.6s ease-out 0.6s both;
-        }
-        
-        .info-card h3 {
-            color: #FFD700;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-        }
-        
-        .info-card p {
-            color: #bbb;
-            line-height: 1.7;
-        }
-        
-        .info-list {
             text-align: right;
-            margin-top: 20px;
         }
         
-        .info-list li {
-            color: #ccc;
-            margin-bottom: 10px;
+        .voucher-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         
-        .info-list li::before {
-            content: '✓';
+        .voucher-number {
+            font-size: 1.5rem;
+            color: #FFD700;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .voucher-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: rgba(34, 197, 94, 0.2);
             color: #22c55e;
-            font-weight: bold;
         }
         
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        
+        .voucher-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .detail-item {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 12px;
+        }
+        
+        .detail-label {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .voucher-amount {
+            grid-column: span 2;
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: #FFD700;
+            padding: 20px;
+        }
+        
+        /* Actions */
         .actions {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
-            animation: fadeInUp 0.6s ease-out 0.8s both;
+            margin-top: 20px;
         }
         
         .btn {
@@ -128,6 +191,8 @@
             border-radius: 50px;
             text-decoration: none;
             transition: all 0.3s;
+            border: none;
+            cursor: pointer;
         }
         
         .btn-primary {
@@ -141,6 +206,12 @@
             box-shadow: 0 12px 35px rgba(255, 215, 0, 0.5);
         }
         
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
         .btn-secondary {
             background: rgba(255,255,255,0.1);
             color: #fff;
@@ -151,50 +222,200 @@
             background: rgba(255,255,255,0.2);
         }
         
-        .contact-info {
-            margin-top: 40px;
+        .info-text {
             color: #888;
             font-size: 0.95rem;
-            animation: fadeInUp 0.6s ease-out 1s both;
+            margin-top: 20px;
         }
         
-        .contact-info a {
-            color: #FFD700;
-            text-decoration: none;
+        .hidden { display: none !important; }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .voucher-details { grid-template-columns: 1fr; }
+            .voucher-amount { grid-column: span 1; }
         }
     </style>
 </head>
 <body>
-    <div class="thankyou-container">
-        <div class="success-icon">
-            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <div class="container">
+        <!-- Waiting State -->
+        <div id="waitingState">
+            <div class="waiting-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" opacity=".3"/><path d="M20 12h2A10 10 0 0 0 12 2v2a8 8 0 0 1 8 8z"/></svg>
+            </div>
+            <h1>ממתין לאישור תשלום...</h1>
+            <p class="subtitle">
+                אנחנו בודקים את סטטוס התשלום שלך.<br>
+                הדף יתעדכן אוטומטית ברגע שהתשלום יאושר.
+            </p>
+            <p class="info-text" id="checkCount">בודק... (ניסיון 1)</p>
         </div>
         
-        <h1>תודה רבה!</h1>
-        
-        <p class="subtitle">
-            ההזמנה שלכם התקבלה בהצלחה 🎉<br>
-            השובר ייווצר ויישלח אליכם במייל תוך דקות ספורות
-        </p>
-        
-        <div class="info-card">
-            <h3>מה קורה עכשיו?</h3>
-            <p>אחרי אישור התשלום, המערכת יוצרת את השובר המותאם אישית שלכם</p>
-            <ul class="info-list">
-                <li>השובר יישלח אליכם במייל</li>
-                <li>תוכלו להוריד אותו גם מהמייל</li>
-                <li>השובר תקף ל-12 חודשים</li>
-            </ul>
+        <!-- Success State -->
+        <div id="successState" class="hidden">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h1>השובר מוכן! 🎉</h1>
+            <p class="subtitle">התשלום התקבל בהצלחה והשובר נוצר</p>
+            
+            <div class="voucher-card">
+                <div class="voucher-header">
+                    <span class="voucher-number" id="voucherNum"></span>
+                    <span class="voucher-status status-active">פעיל</span>
+                </div>
+                
+                <div class="voucher-amount" id="voucherAmount"></div>
+                
+                <div class="voucher-details">
+                    <div class="detail-item">
+                        <div class="detail-label">מקבל השובר</div>
+                        <div class="detail-value" id="recipientName"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">תוקף עד</div>
+                        <div class="detail-value" id="expiryDate"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-primary" id="downloadBtn" onclick="downloadVoucher()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    הורדת השובר
+                </button>
+                <a href="/" class="btn btn-secondary">חזרה לדף הבית</a>
+            </div>
+            
+            <p class="info-text">השובר נשלח גם לכתובת המייל שהזנת</p>
         </div>
         
-        <div class="actions">
-            <a href="/" class="btn btn-primary">חזרה לדף הבית</a>
-            <a href="/check" class="btn btn-secondary">בדיקת שובר קיים</a>
-        </div>
-        
-        <div class="contact-info">
-            <p>יש שאלות? צרו קשר: <a href="tel:0556822072">055-6822072</a></p>
+        <!-- No Voucher State -->
+        <div id="noVoucherState" class="hidden">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h1>תודה רבה!</h1>
+            <p class="subtitle">
+                לאחר אישור התשלום, השובר יישלח אליכם במייל.<br>
+                תוכלו גם לבדוק את סטטוס השובר בכל עת.
+            </p>
+            
+            <div class="actions">
+                <a href="/" class="btn btn-primary">חזרה לדף הבית</a>
+                <a href="/check" class="btn btn-secondary">בדיקת שובר</a>
+            </div>
         </div>
     </div>
+
+    <script>
+        const API = '/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const voucherNumber = urlParams.get('voucher') || localStorage.getItem('voucherNumber');
+        
+        let checkAttempts = 0;
+        const maxAttempts = 60; // 5 minutes (every 5 seconds)
+        let checkInterval;
+        
+        if (voucherNumber) {
+            startChecking();
+        } else {
+            document.getElementById('waitingState').classList.add('hidden');
+            document.getElementById('noVoucherState').classList.remove('hidden');
+        }
+        
+        function startChecking() {
+            checkVoucherStatus();
+            checkInterval = setInterval(checkVoucherStatus, 5000);
+        }
+        
+        async function checkVoucherStatus() {
+            checkAttempts++;
+            document.getElementById('checkCount').textContent = `בודק... (ניסיון ${checkAttempts})`;
+            
+            if (checkAttempts > maxAttempts) {
+                clearInterval(checkInterval);
+                document.getElementById('checkCount').textContent = 'לא הצלחנו לאמת את התשלום. אם שילמת, אנא צור קשר.';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/vouchers/search?number=${voucherNumber}`);
+                const data = await res.json();
+                
+                if (data.found && data.voucher) {
+                    clearInterval(checkInterval);
+                    showVoucher(data.voucher);
+                }
+            } catch (error) {
+                console.error('Error checking voucher:', error);
+            }
+        }
+        
+        function showVoucher(voucher) {
+            document.getElementById('waitingState').classList.add('hidden');
+            document.getElementById('successState').classList.remove('hidden');
+            
+            document.getElementById('voucherNum').textContent = voucher.voucher_number;
+            document.getElementById('voucherAmount').textContent = `₪${parseFloat(voucher.original_amount).toLocaleString()}`;
+            document.getElementById('recipientName').textContent = voucher.recipient_name || voucher.customer_name || '-';
+            document.getElementById('expiryDate').textContent = voucher.expiry_date 
+                ? new Date(voucher.expiry_date).toLocaleDateString('he-IL') 
+                : 'ללא הגבלה';
+            
+            // Store for download
+            window.currentVoucher = voucher;
+            
+            // Clear localStorage
+            localStorage.removeItem('purchaseId');
+            localStorage.removeItem('voucherNumber');
+            localStorage.removeItem('selectedVoucher');
+        }
+        
+        async function downloadVoucher() {
+            const btn = document.getElementById('downloadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>מוריד...</span>';
+            
+            try {
+                // Try to get image
+                const imageUrl = `/api/voucher/${voucherNumber}/image`;
+                const response = await fetch(imageUrl);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `voucher-${voucherNumber}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    // Image not ready yet, show message
+                    alert('תמונת השובר עדיין בהכנה. היא תישלח אליך במייל בקרוב.');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('שגיאה בהורדה. נסה שוב מאוחר יותר.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    הורדת השובר
+                `;
+            }
+        }
+    </script>
 </body>
 </html>
