@@ -6,17 +6,18 @@ const { authMiddleware } = require('../middleware/auth');
 // Rate limiter for voucher search (anti-bot protection)
 const searchAttempts = new Map();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_ATTEMPTS = 10; // max 10 searches per minute per IP
+const MAX_UNIQUE_VOUCHERS = 5; // max 5 different voucher searches per minute per IP
 const BLOCK_DURATION = 5 * 60 * 1000; // 5 minutes block after exceeding
 
 function rateLimitMiddleware(req, res, next) {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const voucherNumber = req.query.number || '';
     const now = Date.now();
     
     let record = searchAttempts.get(ip);
     
     if (!record) {
-        record = { attempts: [], blockedUntil: 0 };
+        record = { voucherSearches: new Map(), blockedUntil: 0 };
         searchAttempts.set(ip, record);
     }
     
@@ -30,21 +31,31 @@ function rateLimitMiddleware(req, res, next) {
         });
     }
     
-    // Clean old attempts
-    record.attempts = record.attempts.filter(t => now - t < RATE_LIMIT_WINDOW);
+    // Clean old voucher searches
+    for (const [voucher, timestamp] of record.voucherSearches.entries()) {
+        if (now - timestamp > RATE_LIMIT_WINDOW) {
+            record.voucherSearches.delete(voucher);
+        }
+    }
     
-    // Check limit
-    if (record.attempts.length >= MAX_ATTEMPTS) {
+    // If same voucher was searched recently, allow it (polling)
+    if (record.voucherSearches.has(voucherNumber)) {
+        record.voucherSearches.set(voucherNumber, now); // Update timestamp
+        return next();
+    }
+    
+    // Check limit on unique voucher searches
+    if (record.voucherSearches.size >= MAX_UNIQUE_VOUCHERS) {
         record.blockedUntil = now + BLOCK_DURATION;
         return res.status(429).json({ 
             error: true, 
-            message: 'יותר מדי ניסיונות. נסה שוב בעוד 5 דקות',
+            message: 'יותר מדי ניסיונות חיפוש. נסה שוב בעוד 5 דקות',
             retryAfter: BLOCK_DURATION / 1000
         });
     }
     
-    // Record this attempt
-    record.attempts.push(now);
+    // Record this voucher search
+    record.voucherSearches.set(voucherNumber, now);
     next();
 }
 
@@ -52,7 +63,7 @@ function rateLimitMiddleware(req, res, next) {
 setInterval(() => {
     const now = Date.now();
     for (const [ip, record] of searchAttempts.entries()) {
-        if (record.attempts.length === 0 && record.blockedUntil < now) {
+        if (record.voucherSearches.size === 0 && record.blockedUntil < now) {
             searchAttempts.delete(ip);
         }
     }
@@ -69,7 +80,7 @@ router.get('/search', rateLimitMiddleware, async (req, res) => {
 
         const result = await db.query(
             `SELECT voucher_number, original_amount, remaining_amount, customer_name, 
-                    purchase_date, expiry_date, status, voucher_image_url
+                    purchase_date, expiry_date, status, voucher_image_url, recipient_name
              FROM vouchers WHERE voucher_number = $1`,
             [number]
         );
