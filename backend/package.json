@@ -1,0 +1,16 @@
+{
+  "name": "giftcard-backend",
+  "version": "1.0.0",
+  "description": "Gift card voucher backend",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.0",
+    "nodemailer": "^6.9.7"
+  }
+}
