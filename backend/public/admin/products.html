@@ -238,6 +238,29 @@
         }
         .emoji-option:hover { background: rgba(255,255,255,0.2); }
         .emoji-option.selected { border-color: #FFD700; background: rgba(255,215,0,0.2); }
+        
+        .image-upload-container { display: flex; flex-direction: column; gap: 12px; }
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: rgba(0,0,0,0.2);
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .image-preview .no-image { color: #666; font-size: 0.9rem; }
+        .image-upload-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .upload-btn { cursor: pointer; }
+        .upload-btn:hover { background: rgba(255,255,255,0.15); }
+        .uploading { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -298,8 +321,21 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>קישור לתמונה</label>
-                        <input type="url" class="form-input" id="productImage" placeholder="https://...">
+                        <label>תמונה</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview" id="imagePreview">
+                                <span class="no-image">אין תמונה</span>
+                            </div>
+                            <div class="image-upload-actions">
+                                <label class="btn btn-secondary btn-small upload-btn">
+                                    <input type="file" id="imageFile" accept="image/*" style="display:none">
+                                    📤 העלה תמונה
+                                </label>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="toggleUrlInput()">🔗 או קישור</button>
+                                <button type="button" class="btn btn-danger btn-small hidden" id="removeImageBtn" onclick="removeImage()">🗑️ הסר</button>
+                            </div>
+                            <input type="url" class="form-input hidden" id="productImage" placeholder="https://...">
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -367,6 +403,8 @@
         let products = [];
         let deleteProductId = null;
         let selectedEmoji = '🎁';
+        let currentImageUrl = '';
+        let uploadedImageUrl = null;
 
         // Check auth
         checkAuth();
@@ -430,6 +468,9 @@
             document.getElementById('productId').value = '';
             document.getElementById('productActive').checked = true;
             selectEmoji('🎁');
+            setImagePreview('');
+            uploadedImageUrl = null;
+            document.getElementById('productImage').classList.add('hidden');
             document.getElementById('productModal').classList.remove('hidden');
         }
 
@@ -443,26 +484,41 @@
             document.getElementById('productPrice').value = product.price;
             document.getElementById('productOrder').value = product.display_order || 0;
             document.getElementById('productDescription').value = product.description || '';
-            document.getElementById('productImage').value = product.image_url || '';
             document.getElementById('productPaymentUrl').value = product.payment_url || '';
             document.getElementById('productActive').checked = product.is_active;
             document.getElementById('productPremium').checked = product.is_premium;
             selectEmoji(product.icon || '🎁');
             
+            // Handle image
+            setImagePreview(product.image_url || '');
+            uploadedImageUrl = product.image_url && product.image_url.startsWith('/uploads/') ? product.image_url : null;
+            document.getElementById('productImage').classList.add('hidden');
+            
             document.getElementById('productModal').classList.remove('hidden');
         }
 
         function closeModal() {
+            // If a new image was uploaded but not saved, delete it
+            const productId = document.getElementById('productId').value;
+            if (!productId && uploadedImageUrl && uploadedImageUrl.startsWith('/uploads/')) {
+                const filename = uploadedImageUrl.split('/').pop();
+                fetch(`${API}/upload/product-image/${filename}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                }).catch(console.error);
+            }
+            uploadedImageUrl = null;
             document.getElementById('productModal').classList.add('hidden');
         }
 
         async function saveProduct() {
             const id = document.getElementById('productId').value;
+            const imageUrl = currentImageUrl || document.getElementById('productImage').value;
             const data = {
                 name: document.getElementById('productName').value,
                 price: parseFloat(document.getElementById('productPrice').value),
                 description: document.getElementById('productDescription').value,
-                image_url: document.getElementById('productImage').value,
+                image_url: imageUrl,
                 payment_url: document.getElementById('productPaymentUrl').value,
                 display_order: parseInt(document.getElementById('productOrder').value) || 0,
                 is_active: document.getElementById('productActive').checked,
@@ -537,6 +593,85 @@
             });
         }
 
+        // Image upload handlers
+        document.getElementById('imageFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const container = document.querySelector('.image-upload-container');
+            container.classList.add('uploading');
+            
+            try {
+                const res = await fetch(`${API}/upload/product-image`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    setImagePreview(data.imageUrl);
+                    uploadedImageUrl = data.imageUrl;
+                } else {
+                    alert(data.message || 'שגיאה בהעלאה');
+                }
+            } catch (error) {
+                alert('שגיאה בהעלאת התמונה');
+            } finally {
+                container.classList.remove('uploading');
+                e.target.value = '';
+            }
+        });
+        
+        document.getElementById('productImage').addEventListener('input', (e) => {
+            const url = e.target.value;
+            if (url) {
+                setImagePreview(url);
+            }
+        });
+        
+        function setImagePreview(url) {
+            const preview = document.getElementById('imagePreview');
+            const removeBtn = document.getElementById('removeImageBtn');
+            
+            if (url) {
+                preview.innerHTML = `<img src="${url}" alt="תצוגה מקדימה">`;
+                removeBtn.classList.remove('hidden');
+                document.getElementById('productImage').value = url;
+                currentImageUrl = url;
+            } else {
+                preview.innerHTML = '<span class="no-image">אין תמונה</span>';
+                removeBtn.classList.add('hidden');
+                document.getElementById('productImage').value = '';
+                currentImageUrl = '';
+            }
+        }
+        
+        function toggleUrlInput() {
+            const input = document.getElementById('productImage');
+            input.classList.toggle('hidden');
+            if (!input.classList.contains('hidden')) {
+                input.focus();
+            }
+        }
+        
+        function removeImage() {
+            // If it was an uploaded image, delete it from server
+            if (uploadedImageUrl && uploadedImageUrl.startsWith('/uploads/')) {
+                const filename = uploadedImageUrl.split('/').pop();
+                fetch(`${API}/upload/product-image/${filename}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                }).catch(console.error);
+            }
+            
+            uploadedImageUrl = null;
+            setImagePreview('');
+        }
+        
         function logout() {
             fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' })
                 .finally(() => window.location.href = '/admin/login.html');

@@ -1,7 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const fs = require('fs');
+const path = require('path');
 const { authMiddleware } = require('../middleware/auth');
+
+// Helper to delete uploaded image
+function deleteUploadedImage(imageUrl) {
+    if (!imageUrl || !imageUrl.startsWith('/uploads/products/')) return;
+    
+    const filename = imageUrl.replace('/uploads/products/', '');
+    if (filename.includes('..') || filename.includes('/')) return;
+    
+    const filePath = path.join(__dirname, '../../uploads/products', filename);
+    if (fs.existsSync(filePath)) {
+        try {
+            fs.unlinkSync(filePath);
+            console.log('Deleted image:', filename);
+        } catch (err) {
+            console.error('Error deleting image:', err);
+        }
+    }
+}
 
 // Get all active products (public)
 router.get('/', async (req, res) => {
@@ -71,6 +91,16 @@ router.put('/:id', authMiddleware, async (req, res) => {
         const { id } = req.params;
         const { name, price, description, image_url, payment_url, display_order, is_active, is_premium, icon } = req.body;
         
+        // Get current product to check if image changed
+        const current = await db.query('SELECT image_url FROM products WHERE id = $1', [id]);
+        if (current.rows.length > 0 && image_url !== undefined) {
+            const oldImageUrl = current.rows[0].image_url;
+            // Delete old image if it's a local upload and different from new one
+            if (oldImageUrl && oldImageUrl !== image_url && oldImageUrl.startsWith('/uploads/')) {
+                deleteUploadedImage(oldImageUrl);
+            }
+        }
+        
         const result = await db.query(
             `UPDATE products SET 
                 name = COALESCE($1, name),
@@ -104,10 +134,18 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         
+        // Get product to delete its image
+        const product = await db.query('SELECT image_url FROM products WHERE id = $1', [id]);
+        
         const result = await db.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
         
         if (result.rows.length === 0) {
             return res.status(404).json({ error: true, message: 'מוצר לא נמצא' });
+        }
+        
+        // Delete the image file if it's a local upload
+        if (product.rows.length > 0 && product.rows[0].image_url) {
+            deleteUploadedImage(product.rows[0].image_url);
         }
         
         res.json({ success: true, message: 'מוצר נמחק בהצלחה' });

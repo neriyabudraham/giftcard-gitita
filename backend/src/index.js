@@ -9,6 +9,7 @@ const vouchersRoutes = require('./routes/vouchers.routes');
 const purchaseRoutes = require('./routes/purchase.routes');
 const voucherRoutes = require('./routes/voucher.routes');
 const productsRoutes = require('./routes/products.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +25,9 @@ app.use(cookieParser());
 // Static files for admin panel
 app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
 
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/users', usersRoutes);
@@ -32,6 +36,7 @@ app.use('/purchase', purchaseRoutes);
 app.use('/purchases', purchaseRoutes);
 app.use('/voucher', voucherRoutes);
 app.use('/products', productsRoutes);
+app.use('/upload', uploadRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
