@@ -7,6 +7,10 @@ const VOUCHERS_DIR = path.join(__dirname, '../../vouchers');
 function generateVoucherHTML(data) {
     const { voucherNumber, amount, recipientName, greeting, expiryDate } = data;
     
+    // Format amount - remove .00 if whole number
+    const numAmount = parseFloat(amount);
+    const formattedAmount = Number.isInteger(numAmount) ? numAmount.toString() : numAmount.toLocaleString('he-IL');
+    
     const formattedGreeting = greeting 
         ? greeting.replace(/\n/g, '<br>') 
         : `שובר מתנה עבור ${recipientName}`;
@@ -265,7 +269,7 @@ function generateVoucherHTML(data) {
             <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
                 <div class="logo"></div>
                 <div class="voucher-title">שובר מתנה</div>
-                <div class="voucher-amount">₪${amount}</div>
+                <div class="voucher-amount">₪${formattedAmount}</div>
                 <div class="voucher-subtitle">שפת המדבר<br>חוויה של יופי וטבע</div>
             </div>
         </div>
