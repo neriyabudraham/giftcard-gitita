@@ -604,12 +604,12 @@
             try {
                 const res = await fetch(`${API}/products`, { credentials: 'include' });
                 const data = await res.json();
-                productsCache = data.products || [];
+                productsCache = Array.isArray(data) ? data : (data.products || []);
                 
                 const select = document.getElementById('createProductSelect');
                 select.innerHTML = '<option value="">-- בחר מוצר או הזן ידנית --</option>';
                 
-                productsCache.forEach(p => {
+                productsCache.filter(p => p.is_active !== false).forEach(p => {
                     const price = Number.isInteger(p.price) ? p.price : parseFloat(p.price).toFixed(0);
                     const isMonetary = p.name.includes('₪') || p.name.includes('שובר');
                     select.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}" data-monetary="${isMonetary}">${p.name} - ₪${price}</option>`;
