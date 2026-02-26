@@ -6,28 +6,39 @@ const { authMiddleware } = require('../middleware/auth');
 // Get all leads and customers
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        // Get all unique buyers from purchases (grouped by email/phone)
+        // Get all unique buyers - group by email (primary) or phone (if no email)
         const purchasesResult = await db.query(`
+            WITH normalized_purchases AS (
+                SELECT 
+                    NULLIF(TRIM(buyer_email), '') as buyer_email,
+                    NULLIF(TRIM(buyer_phone), '') as buyer_phone,
+                    TRIM(buyer_first_name) as buyer_first_name,
+                    TRIM(buyer_last_name) as buyer_last_name,
+                    TRIM(recipient_first_name) as recipient_first_name,
+                    TRIM(recipient_last_name) as recipient_last_name,
+                    voucher_number, amount, status, created_at
+                FROM purchases
+            )
             SELECT 
                 COALESCE(buyer_email, '') as email,
-                COALESCE(buyer_phone, '') as phone,
-                CONCAT(buyer_first_name, ' ', buyer_last_name) as name,
+                MAX(COALESCE(buyer_phone, '')) as phone,
+                MAX(CONCAT(COALESCE(buyer_first_name, ''), ' ', COALESCE(buyer_last_name, ''))) as name,
                 MIN(created_at) as created_at,
                 ARRAY_AGG(
                     json_build_object(
                         'voucher_number', voucher_number,
                         'amount', amount,
                         'status', status,
-                        'recipient_name', CONCAT(recipient_first_name, ' ', recipient_last_name),
+                        'recipient_name', CONCAT(COALESCE(recipient_first_name, ''), ' ', COALESCE(recipient_last_name, '')),
                         'created_at', created_at
                     ) ORDER BY created_at DESC
                 ) as vouchers,
                 COUNT(*) as purchase_count,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count,
                 SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as total_spent
-            FROM purchases
+            FROM normalized_purchases
             WHERE buyer_email IS NOT NULL OR buyer_phone IS NOT NULL
-            GROUP BY buyer_email, buyer_phone, buyer_first_name, buyer_last_name
+            GROUP BY COALESCE(buyer_email, buyer_phone)
             ORDER BY MAX(created_at) DESC
         `);
 
