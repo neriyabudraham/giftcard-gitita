@@ -157,7 +157,67 @@ async function sendPasswordResetEmail(to, name, token) {
     }
 }
 
+async function sendAdminNotificationEmail(data) {
+    const { adminEmail, voucherNumber, amount, buyerName, buyerEmail, buyerPhone, recipientName } = data;
+    
+    if (!adminEmail) return;
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
+        to: adminEmail,
+        subject: `רכישה חדשה! שובר ${voucherNumber} - ${amount}`,
+        html: `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #22c55e; padding-bottom: 20px; }
+        h1 { color: #22c55e; margin: 0; }
+        .content { line-height: 1.8; color: #333; }
+        .info-box { background: #f0fdf4; border-radius: 10px; padding: 20px; margin: 20px 0; border-right: 4px solid #22c55e; }
+        .info-box p { margin: 8px 0; }
+        .info-box strong { color: #166534; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 רכישה חדשה!</h1>
+        </div>
+        <div class="content">
+            <p>התקבלה רכישה חדשה במערכת השוברים:</p>
+            <div class="info-box">
+                <p><strong>מספר שובר:</strong> ${voucherNumber}</p>
+                <p><strong>סכום/מוצר:</strong> ${amount}</p>
+                <p><strong>שם הרוכש:</strong> ${buyerName || '-'}</p>
+                <p><strong>מייל:</strong> ${buyerEmail || '-'}</p>
+                <p><strong>טלפון:</strong> ${buyerPhone || '-'}</p>
+                ${recipientName ? `<p><strong>מקבל השובר:</strong> ${recipientName}</p>` : ''}
+            </div>
+            <p>תוכל לצפות בפרטים המלאים במערכת הניהול.</p>
+        </div>
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} שפת המדבר - מערכת ניהול שוברים</p>
+        </div>
+    </div>
+</body>
+</html>`
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Admin notification sent to ${adminEmail}`);
+    } catch (error) {
+        console.error('Error sending admin notification:', error);
+    }
+}
+
 module.exports = {
     sendVoucherEmail,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendAdminNotificationEmail
 };

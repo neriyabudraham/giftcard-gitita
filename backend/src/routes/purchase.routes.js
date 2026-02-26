@@ -354,6 +354,27 @@ router.post('/webhook', async (req, res) => {
             console.error('Error sending email:', emailError);
         }
 
+        // Send admin notification
+        try {
+            const adminEmailSetting = await db.query(
+                "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
+            );
+            if (adminEmailSetting.rows.length > 0) {
+                const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
+                await emailService.sendAdminNotificationEmail({
+                    adminEmail,
+                    voucherNumber: purchase.voucher_number,
+                    amount: voucherDisplayAmount,
+                    buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
+                    buyerEmail: purchase.buyer_email,
+                    buyerPhone: purchase.buyer_phone,
+                    recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`
+                });
+            }
+        } catch (adminEmailError) {
+            console.error('Error sending admin notification:', adminEmailError);
+        }
+
         res.json({ 
             success: true, 
             message: 'שובר נוצר בהצלחה',

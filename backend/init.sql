@@ -121,7 +121,8 @@ INSERT INTO site_settings (setting_key, setting_value) VALUES
     {"question": "איך מממשים את השובר?", "answer": "פשוט מאוד! מגיעים לשפת המדבר, מציגים את השובר (דיגיטלי או מודפס) ונהנים. אפשר לממש בפעם אחת או בכמה פעמים עד גמר הסכום."},
     {"question": "האם אפשר לשלוח את השובר במתנה?", "answer": "בהחלט! בתהליך הרכישה תוכלו להוסיף ברכה אישית ולשלוח את השובר ישירות למקבל המתנה במייל או להוריד ולשלוח בעצמכם."},
     {"question": "מה קורה אם השובר לא נוצל במלואו?", "answer": "היתרה נשמרת! אפשר להשתמש בשובר מספר פעמים עד גמר הסכום. תוכלו תמיד לבדוק את היתרה באתר."}
-]'::jsonb)
+]'::jsonb),
+('admin_notification_email', '"netanelbar9@gmail.com"'::jsonb)
 ON CONFLICT (setting_key) DO NOTHING;
 
 -- Products table

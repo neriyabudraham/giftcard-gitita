@@ -399,6 +399,27 @@ router.post('/', authMiddleware, async (req, res) => {
             }
         }
 
+        // Send admin notification
+        try {
+            const adminEmailSetting = await db.query(
+                "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
+            );
+            if (adminEmailSetting.rows.length > 0) {
+                const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
+                await emailService.sendAdminNotificationEmail({
+                    adminEmail,
+                    voucherNumber: voucher_number,
+                    amount: product_name || `₪${original_amount}`,
+                    buyerName: customer_name || 'נוצר דרך ממשק הניהול',
+                    buyerEmail: email,
+                    buyerPhone: phone_number,
+                    recipientName: recipient_name
+                });
+            }
+        } catch (adminEmailError) {
+            console.error('Error sending admin notification:', adminEmailError);
+        }
+
         res.json({ success: true, voucher });
 
     } catch (error) {

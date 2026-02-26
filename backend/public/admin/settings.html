@@ -270,6 +270,16 @@
             <p style="color:#888; margin-bottom: 15px;">הברכה שתופיע כברירת מחדל בטופס הרכישה (הימנעו מאימוג'ים)</p>
             <textarea class="form-textarea" id="defaultGreeting" style="min-height: 150px;" placeholder="הזינו ברכת ברירת מחדל..."></textarea>
         </div>
+
+        <!-- Admin Notification Email Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>📧 מייל התראות למנהל</h2>
+                <button class="btn btn-primary btn-small" onclick="saveAdminEmail()">שמור</button>
+            </div>
+            <p style="color:#888; margin-bottom: 15px;">כתובת המייל שתקבל התראה על כל רכישה חדשה</p>
+            <input type="email" class="form-input" id="adminNotificationEmail" placeholder="example@email.com" style="max-width:400px">
+        </div>
     </div>
 
     <!-- Add Image Modal -->
@@ -361,6 +371,7 @@
 מקווים שתהנו מהשובר הזה בדיוק כמו שחשבנו עליכם כשבחרנו אותו`;
                 
                 document.getElementById('defaultGreeting').value = defaultGreeting;
+                document.getElementById('adminNotificationEmail').value = settings.admin_notification_email || '';
                 renderImages();
                 renderFaq();
             } catch (error) {
@@ -381,6 +392,26 @@
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ value: greeting })
+                });
+                showSaveIndicator();
+            } catch (error) {
+                alert('שגיאה בשמירה');
+            }
+        }
+        
+        async function saveAdminEmail() {
+            const email = document.getElementById('adminNotificationEmail').value.trim();
+            if (!email) {
+                alert('נא להזין מייל');
+                return;
+            }
+            
+            try {
+                await fetch(`${API}/settings/admin_notification_email`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ value: email })
                 });
                 showSaveIndicator();
             } catch (error) {
