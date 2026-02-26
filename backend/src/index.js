@@ -11,6 +11,7 @@ const voucherRoutes = require('./routes/voucher.routes');
 const productsRoutes = require('./routes/products.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const settingsRoutes = require('./routes/settings.routes');
+const leadsRoutes = require('./routes/leads.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -63,6 +64,7 @@ app.use('/voucher', voucherRoutes);
 app.use('/products', productsRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/settings', settingsRoutes);
+app.use('/leads', leadsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
