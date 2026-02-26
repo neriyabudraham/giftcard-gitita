@@ -58,6 +58,96 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
+// Import leads from CSV data
+router.post('/import', authMiddleware, async (req, res) => {
+    try {
+        const { records } = req.body;
+        
+        if (!records || !Array.isArray(records)) {
+            return res.status(400).json({ error: true, message: 'נדרש מערך של רשומות' });
+        }
+
+        let customersCount = 0;
+        let leadsCount = 0;
+        let skippedCount = 0;
+        const errors = [];
+
+        for (const record of records) {
+            try {
+                // Skip empty records
+                if (!record.buyerEmail && !record.buyerPhone && !record.buyerFirstName) {
+                    skippedCount++;
+                    continue;
+                }
+
+                // Determine if customer or lead
+                const isCustomer = record.voucher_download_link || record.whatsapp_sent === 'true' || record.whatsapp_sent === true;
+                const status = isCustomer ? 'completed' : 'pending';
+
+                // Check if voucher already exists
+                if (record.voucherId) {
+                    const existing = await db.query(
+                        'SELECT id FROM purchases WHERE voucher_number = $1',
+                        [record.voucherId]
+                    );
+                    if (existing.rows.length > 0) {
+                        skippedCount++;
+                        continue;
+                    }
+                }
+
+                // Insert purchase
+                const result = await db.query(`
+                    INSERT INTO purchases 
+                    (voucher_number, amount, buyer_first_name, buyer_last_name, buyer_phone, buyer_email,
+                     recipient_first_name, recipient_last_name, recipient_phone, greeting, status, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    ON CONFLICT DO NOTHING
+                    RETURNING id
+                `, [
+                    record.voucherId || Math.floor(1000000000000 + Math.random() * 9000000000000).toString(),
+                    parseFloat(record.amount) || 0,
+                    record.buyerFirstName || '',
+                    record.buyerLastName || '',
+                    record.buyerPhone || '',
+                    record.buyerEmail || '',
+                    record.recipientFirstName || '',
+                    record.recipientLastName || '',
+                    record.recipientPhone || '',
+                    record.greeting || '',
+                    status,
+                    record.created_date ? new Date(record.created_date) : new Date()
+                ]);
+
+                if (result.rows.length > 0) {
+                    if (isCustomer) {
+                        customersCount++;
+                    } else {
+                        leadsCount++;
+                    }
+                }
+            } catch (recordError) {
+                errors.push({ voucherId: record.voucherId, error: recordError.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            summary: {
+                customers: customersCount,
+                leads: leadsCount,
+                skipped: skippedCount,
+                errors: errors.length
+            },
+            errors: errors.length > 0 ? errors : undefined
+        });
+
+    } catch (error) {
+        console.error('Import leads error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה בייבוא לידים' });
+    }
+});
+
 // Get single lead details
 router.get('/:email', authMiddleware, async (req, res) => {
     try {
