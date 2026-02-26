@@ -183,6 +183,7 @@
             justify-content: center;
         }
         .modal.show { display: flex; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .modal-content {
             background: #1a1a2e;
             border-radius: 20px;
@@ -481,6 +482,31 @@
         </div>
     </div>
 
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content" style="max-width:450px;text-align:center">
+            <div class="modal-body" style="padding:40px 30px">
+                <div id="successIcon" style="font-size:4rem;margin-bottom:20px">✅</div>
+                <h2 id="successTitle" style="color:#22c55e;margin-bottom:15px">שובר נוצר בהצלחה!</h2>
+                <p id="successMessage" style="color:#ccc;font-size:1.1rem;line-height:1.6;margin-bottom:25px"></p>
+                <div id="successDetails" style="background:rgba(34,197,94,0.1);border-radius:10px;padding:15px;margin-bottom:25px;text-align:right"></div>
+                <button class="btn btn-primary" onclick="closeModal('successModal')" style="min-width:150px">סגור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal" id="errorModal">
+        <div class="modal-content" style="max-width:450px;text-align:center">
+            <div class="modal-body" style="padding:40px 30px">
+                <div style="font-size:4rem;margin-bottom:20px">❌</div>
+                <h2 style="color:#ef4444;margin-bottom:15px">שגיאה</h2>
+                <p id="errorMessage" style="color:#ccc;font-size:1.1rem;line-height:1.6;margin-bottom:25px"></p>
+                <button class="btn btn-secondary" onclick="closeModal('errorModal')" style="min-width:150px">סגור</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API = '/api';
         let currentUser = null;
@@ -769,6 +795,19 @@
         function closeModal(id) {
             document.getElementById(id).classList.remove('show');
         }
+        
+        function showSuccessModal({ title, message, details }) {
+            document.getElementById('successTitle').textContent = title || 'הצלחה!';
+            document.getElementById('successMessage').textContent = message || '';
+            document.getElementById('successDetails').innerHTML = details || '';
+            document.getElementById('successDetails').style.display = details ? 'block' : 'none';
+            document.getElementById('successModal').classList.add('show');
+        }
+        
+        function showErrorModal(message) {
+            document.getElementById('errorMessage').textContent = message || 'אירעה שגיאה';
+            document.getElementById('errorModal').classList.add('show');
+        }
 
         function generateVoucherNumber() {
             const num = Math.floor(Math.random() * 9000000000000) + 1000000000000;
@@ -812,9 +851,10 @@
             
             const buyerEmail = document.getElementById('createBuyerEmail').value;
             const recipientEmail = document.getElementById('createRecipientEmail').value;
+            const voucherNumber = document.getElementById('createNumber').value;
             
             const voucher = {
-                voucher_number: document.getElementById('createNumber').value,
+                voucher_number: voucherNumber,
                 original_amount: isProductVoucher ? 0 : parseFloat(document.getElementById('createAmount').value),
                 expiry_date: document.getElementById('createExpiry').value,
                 greeting: document.getElementById('createGreeting').value,
@@ -836,6 +876,12 @@
                 send_to_recipient: document.getElementById('createSendToRecipient').checked
             };
             
+            // Show loading state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">⏳</span> יוצר שובר...';
+            submitBtn.disabled = true;
+            
             try {
                 const res = await fetch(`${API}/vouchers`, {
                     method: 'POST',
@@ -848,21 +894,34 @@
                 
                 if (!res.ok) throw new Error(data.message);
                 
-                let msg = 'שובר נוצר בהצלחה!';
+                // Build success message
                 const sentTo = [];
                 if (voucher.send_to_admin) sentTo.push('מנהל');
-                if (voucher.send_to_buyer && buyerEmail) sentTo.push('רוכש (' + buyerEmail + ')');
-                if (voucher.send_to_recipient && recipientEmail) sentTo.push('מקבל (' + recipientEmail + ')');
-                if (sentTo.length > 0) {
-                    msg += '\nנשלח ל: ' + sentTo.join(', ');
-                }
-                alert(msg);
+                if (voucher.send_to_buyer && buyerEmail) sentTo.push('רוכש');
+                if (voucher.send_to_recipient && recipientEmail) sentTo.push('מקבל');
+                
+                // Show success modal
                 closeModal('createModal');
+                showSuccessModal({
+                    title: 'שובר נוצר בהצלחה!',
+                    message: sentTo.length > 0 ? 'השובר נשלח בהצלחה' : 'השובר נשמר במערכת',
+                    details: `
+                        <p><strong>מספר שובר:</strong> ${voucherNumber}</p>
+                        <p><strong>סכום/מוצר:</strong> ${voucher.product_name || '₪' + voucher.original_amount}</p>
+                        ${sentTo.length > 0 ? `<p><strong>נשלח ל:</strong> ${sentTo.join(', ')}</p>` : ''}
+                        ${buyerEmail && voucher.send_to_buyer ? `<p style="font-size:0.9rem;color:#888">רוכש: ${buyerEmail}</p>` : ''}
+                        ${recipientEmail && voucher.send_to_recipient ? `<p style="font-size:0.9rem;color:#888">מקבל: ${recipientEmail}</p>` : ''}
+                    `
+                });
+                
                 loadVouchers();
                 loadStats();
                 
             } catch (error) {
-                alert(error.message);
+                showErrorModal(error.message);
+            } finally {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
             }
         });
 
