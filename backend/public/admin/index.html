@@ -853,12 +853,15 @@
             const recipientEmail = document.getElementById('createRecipientEmail').value;
             const voucherNumber = document.getElementById('createNumber').value;
             
+            const amountValue = parseFloat(document.getElementById('createAmount').value) || 0;
+            
             const voucher = {
                 voucher_number: voucherNumber,
-                original_amount: isProductVoucher ? 0 : parseFloat(document.getElementById('createAmount').value),
+                original_amount: amountValue,
                 expiry_date: document.getElementById('createExpiry').value,
                 greeting: document.getElementById('createGreeting').value,
                 product_name: isProductVoucher ? document.getElementById('createProductName').value : null,
+                is_product_voucher: isProductVoucher,
                 // Buyer details
                 buyer_name: document.getElementById('createBuyerName').value,
                 buyer_phone: document.getElementById('createBuyerPhone').value,

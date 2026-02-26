@@ -592,6 +592,7 @@
             const isExpired = voucher.expiry_date && new Date(voucher.expiry_date) < new Date();
             const statusEl = document.getElementById('voucherStatus');
             const remaining = parseFloat(voucher.remaining_amount);
+            const isProductVoucher = voucher.product_name && voucher.product_name.length > 0;
             
             if (voucher.status === 'used' || remaining <= 0) {
                 statusEl.textContent = 'נוצל במלואו';
@@ -606,14 +607,25 @@
                 statusEl.className = 'voucher-status status-active';
                 document.getElementById('redemptionSection').style.display = 'block';
                 
-                // Setup quick amounts
-                const quickAmounts = document.getElementById('quickAmounts');
-                const amounts = [remaining];
-                if (remaining > 50) amounts.unshift(50);
-                if (remaining > 100) amounts.unshift(100);
-                quickAmounts.innerHTML = amounts.map(a => 
-                    `<button type="button" class="quick-amount" onclick="setRedeemAmount(${a})">₪${a}</button>`
-                ).join('');
+                if (isProductVoucher) {
+                    // Product vouchers: only full redemption
+                    document.getElementById('quickAmounts').innerHTML = `
+                        <p style="color:#fbbf24;margin-bottom:10px;font-size:0.9rem">שובר מוצר - מימוש מלא בלבד</p>
+                        <button type="button" class="quick-amount" onclick="setRedeemAmount(${remaining})" style="width:100%">מימוש מלא</button>
+                    `;
+                    document.getElementById('redeemAmount').value = remaining;
+                    document.getElementById('redeemAmount').disabled = true;
+                } else {
+                    // Monetary vouchers: partial or full redemption
+                    const quickAmounts = document.getElementById('quickAmounts');
+                    const amounts = [remaining];
+                    if (remaining > 50) amounts.unshift(50);
+                    if (remaining > 100) amounts.unshift(100);
+                    quickAmounts.innerHTML = amounts.map(a => 
+                        `<button type="button" class="quick-amount" onclick="setRedeemAmount(${a})">₪${a}</button>`
+                    ).join('');
+                    document.getElementById('redeemAmount').disabled = false;
+                }
                 
                 document.getElementById('redeemAmount').max = remaining;
             }
@@ -623,17 +635,27 @@
                 return Number.isInteger(num) ? num : num.toLocaleString();
             };
             
-            document.getElementById('voucherAmount').textContent = `₪${formatAmount(voucher.remaining_amount)}`;
+            // Display product name or amount
+            if (isProductVoucher) {
+                document.getElementById('voucherAmount').textContent = voucher.product_name;
+                document.getElementById('voucherAmount').style.fontSize = '1.8rem';
+            } else {
+                document.getElementById('voucherAmount').textContent = `₪${formatAmount(voucher.remaining_amount)}`;
+                document.getElementById('voucherAmount').style.fontSize = '3rem';
+            }
+            
             document.getElementById('voucherNum').textContent = voucher.voucher_number;
-            document.getElementById('originalAmount').textContent = `₪${formatAmount(voucher.original_amount)}`;
-            document.getElementById('remainingAmount').textContent = `₪${formatAmount(voucher.remaining_amount)}`;
+            document.getElementById('originalAmount').textContent = isProductVoucher ? voucher.product_name : `₪${formatAmount(voucher.original_amount)}`;
+            document.getElementById('remainingAmount').textContent = isProductVoucher 
+                ? (voucher.status === 'used' ? 'נוצל' : 'זמין למימוש')
+                : `₪${formatAmount(voucher.remaining_amount)}`;
             document.getElementById('expiryDate').textContent = voucher.expiry_date ? new Date(voucher.expiry_date).toLocaleDateString('he-IL') : 'ללא הגבלה';
             
             // Reset redemption form
             document.getElementById('redemptionForm').classList.remove('show');
             document.getElementById('redemptionSuccess').style.display = 'none';
             document.getElementById('staffPin').value = '';
-            document.getElementById('redeemAmount').value = '';
+            if (!isProductVoucher) document.getElementById('redeemAmount').value = '';
             document.getElementById('redeemNotes').value = '';
         }
         

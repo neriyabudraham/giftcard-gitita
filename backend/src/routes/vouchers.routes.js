@@ -166,6 +166,7 @@ router.post('/public-redeem', rateLimitMiddleware, async (req, res) => {
 
         const voucher = voucherResult.rows[0];
         const isExpired = voucher.expiry_date && new Date(voucher.expiry_date) < new Date();
+        const isProductVoucher = voucher.product_name && voucher.product_name.length > 0;
 
         if (voucher.status !== 'active') {
             return res.status(400).json({ error: true, message: 'השובר אינו פעיל' });
@@ -173,6 +174,17 @@ router.post('/public-redeem', rateLimitMiddleware, async (req, res) => {
 
         if (isExpired) {
             return res.status(400).json({ error: true, message: 'השובר פג תוקף' });
+        }
+
+        // Product vouchers can only be fully redeemed
+        if (isProductVoucher) {
+            if (parseFloat(amount) !== parseFloat(voucher.remaining_amount)) {
+                return res.status(400).json({ 
+                    error: true, 
+                    message: 'שובר מוצר ניתן למימוש מלא בלבד',
+                    isProductVoucher: true
+                });
+            }
         }
 
         if (parseFloat(voucher.remaining_amount) < parseFloat(amount)) {
