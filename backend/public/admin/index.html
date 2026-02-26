@@ -342,7 +342,7 @@
                 <div class="voucher-details" id="useVoucherDetails"></div>
                 <form id="useForm">
                     <input type="hidden" id="useVoucherId">
-                    <div class="form-group">
+                    <div class="form-group" id="useAmountGroup">
                         <label>סכום לניצול</label>
                         <input type="number" id="useAmount" min="1" required>
                     </div>
@@ -642,24 +642,26 @@
             
             const isProductVoucher = voucher.product_name && voucher.product_name.length > 0;
             const amountInput = document.getElementById('useAmount');
+            const amountGroup = document.getElementById('useAmountGroup');
             
             document.getElementById('useVoucherId').value = id;
             amountInput.max = voucher.remaining_amount;
             document.getElementById('useNotes').value = '';
             
             if (isProductVoucher) {
-                // Product vouchers - auto-set full amount and disable
+                // Product vouchers - hide amount field, auto-set full amount
+                amountGroup.style.display = 'none';
                 amountInput.value = voucher.remaining_amount;
-                amountInput.disabled = true;
+                amountInput.required = false;
                 document.getElementById('useVoucherDetails').innerHTML = `
                     <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
                     <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>
                     <p><span>מוצר:</span> <strong>${voucher.product_name}</strong></p>
-                    <p style="color:#fbbf24;font-size:0.9rem;margin-top:10px">⚠️ שובר מוצר - מימוש מלא בלבד</p>
                 `;
             } else {
+                amountGroup.style.display = 'block';
                 amountInput.value = '';
-                amountInput.disabled = false;
+                amountInput.required = true;
                 document.getElementById('useVoucherDetails').innerHTML = `
                     <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
                     <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>

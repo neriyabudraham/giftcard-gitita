@@ -604,15 +604,12 @@
                 document.getElementById('redemptionSection').style.display = 'block';
                 
                 if (isProductVoucher) {
-                    // Product vouchers: only full redemption
-                    document.getElementById('quickAmounts').innerHTML = `
-                        <p style="color:#fbbf24;margin-bottom:10px;font-size:0.9rem">שובר מוצר - מימוש מלא בלבד</p>
-                        <button type="button" class="quick-amount" onclick="setRedeemAmount(${remaining})" style="width:100%">מימוש מלא</button>
-                    `;
+                    // Product vouchers: hide amount field completely, just show redeem button
+                    document.getElementById('amountGroup').style.display = 'none';
                     document.getElementById('redeemAmount').value = remaining;
-                    document.getElementById('redeemAmount').disabled = true;
                 } else {
                     // Monetary vouchers: partial or full redemption
+                    document.getElementById('amountGroup').style.display = 'block';
                     const quickAmounts = document.getElementById('quickAmounts');
                     const amounts = [remaining];
                     if (remaining > 50) amounts.unshift(50);
