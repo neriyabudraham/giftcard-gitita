@@ -415,15 +415,15 @@ router.post('/webhook', async (req, res) => {
                 console.error('Error sending email:', emailError);
             }
 
-            // Send admin notification
+            // Send admin notification to all users who should receive notifications
             try {
-                const adminEmailSetting = await db.query(
-                    "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
+                const notificationRecipients = await db.query(
+                    "SELECT email FROM users WHERE is_active = true AND receives_voucher_notifications = true"
                 );
-                if (adminEmailSetting.rows.length > 0) {
-                    const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
+                if (notificationRecipients.rows.length > 0) {
+                    const adminEmails = notificationRecipients.rows.map(r => r.email);
                     await emailService.sendAdminNotificationEmail({
-                        adminEmail,
+                        adminEmails,
                         voucherNumber: voucherNumber,
                         amount: voucherDisplayAmount,
                         buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
@@ -436,19 +436,24 @@ router.post('/webhook', async (req, res) => {
                 console.error('Error sending admin notification:', adminEmailError);
             }
         } else {
-            // No customer found - send notification to admin about unmatched voucher
-            const adminNotifyEmail = 'netanelbar9@gmail.com';
+            // No customer found - send notification to all admins who should receive notifications
             try {
-                await emailService.sendUnmatchedVoucherNotification({
-                    adminEmail: adminNotifyEmail,
-                    voucherNumber: voucherNumber,
-                    amount: paymentAmount,
-                    payerName: payerName,
-                    payerEmail: payerEmail,
-                    payerPhone: payerPhone,
-                    paymentReference: paymentReference
-                });
-                console.log('Unmatched voucher notification sent to:', adminNotifyEmail);
+                const notificationRecipients = await db.query(
+                    "SELECT email FROM users WHERE is_active = true AND receives_voucher_notifications = true"
+                );
+                if (notificationRecipients.rows.length > 0) {
+                    const adminEmails = notificationRecipients.rows.map(r => r.email);
+                    await emailService.sendUnmatchedVoucherNotification({
+                        adminEmails,
+                        voucherNumber: voucherNumber,
+                        amount: paymentAmount,
+                        payerName: payerName,
+                        payerEmail: payerEmail,
+                        payerPhone: payerPhone,
+                        paymentReference: paymentReference
+                    });
+                    console.log('Unmatched voucher notification sent to:', adminEmails.join(', '));
+                }
             } catch (notifyError) {
                 console.error('Error sending unmatched voucher notification:', notifyError);
             }

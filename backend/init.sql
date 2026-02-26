@@ -9,11 +9,15 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT true,
     password_created BOOLEAN DEFAULT false,
     password_reset_required BOOLEAN DEFAULT false,
+    receives_voucher_notifications BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by INTEGER REFERENCES users(id),
     last_login TIMESTAMP
 );
+
+-- Add receives_voucher_notifications column if not exists (for migration)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS receives_voucher_notifications BOOLEAN DEFAULT false;
 
 -- Vouchers table
 CREATE TABLE IF NOT EXISTS vouchers (

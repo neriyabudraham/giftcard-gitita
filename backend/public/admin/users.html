@@ -203,6 +203,35 @@
             color: #FFD700;
             font-size: 0.9rem;
         }
+        .toggle-switch { cursor: pointer; }
+        .toggle-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .toggle-on {
+            background: rgba(40,167,69,0.2);
+            color: #5cb85c;
+        }
+        .toggle-off {
+            background: rgba(100,100,100,0.2);
+            color: #888;
+        }
+        .toggle-badge:hover {
+            transform: scale(1.05);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -304,6 +333,12 @@
                             <option value="false">לא פעיל</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="editNotifications">
+                            <span>מקבל התראות על שוברים חדשים</span>
+                        </label>
+                    </div>
                     <button type="submit" class="btn btn-primary" style="width:100%">שמירת שינויים</button>
                 </form>
             </div>
@@ -361,6 +396,7 @@
                             <th>שם</th>
                             <th>הרשאה</th>
                             <th>סטטוס</th>
+                            <th>מקבל התראות</th>
                             <th>סיסמה נוצרה</th>
                             <th>התחברות אחרונה</th>
                             <th>פעולות</th>
@@ -373,6 +409,13 @@
                                 <td>${u.name || '-'}</td>
                                 <td><span class="status-badge ${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role === 'admin' ? 'מנהל' : 'משתמש'}</span></td>
                                 <td><span class="status-badge ${u.is_active ? 'status-active' : 'status-inactive'}">${u.is_active ? 'פעיל' : 'לא פעיל'}</span></td>
+                                <td>
+                                    <label class="toggle-switch" onclick="toggleNotifications(${u.id}, ${!u.receives_voucher_notifications})">
+                                        <span class="toggle-badge ${u.receives_voucher_notifications ? 'toggle-on' : 'toggle-off'}">
+                                            ${u.receives_voucher_notifications ? '✓ מקבל' : '✗ לא מקבל'}
+                                        </span>
+                                    </label>
+                                </td>
                                 <td>${u.password_created ? '✓' : '✗'}</td>
                                 <td>${u.last_login ? new Date(u.last_login).toLocaleString('he-IL') : 'אף פעם'}</td>
                                 <td class="actions-cell">
@@ -390,6 +433,27 @@
             document.getElementById('usersTable').innerHTML = html;
         }
 
+        async function toggleNotifications(id, newValue) {
+            try {
+                const res = await fetch(`${API}/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ receives_voucher_notifications: newValue })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.message);
+                }
+                
+                loadUsers();
+                
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
         function openAddModal() {
             document.getElementById('addForm').reset();
             document.getElementById('addModal').classList.add('show');
@@ -404,6 +468,7 @@
             document.getElementById('editName').value = user.name || '';
             document.getElementById('editRole').value = user.role;
             document.getElementById('editActive').value = String(user.is_active);
+            document.getElementById('editNotifications').checked = user.receives_voucher_notifications || false;
             
             document.getElementById('editModal').classList.add('show');
         }
@@ -449,7 +514,8 @@
             const user = {
                 name: document.getElementById('editName').value,
                 role: document.getElementById('editRole').value,
-                is_active: document.getElementById('editActive').value === 'true'
+                is_active: document.getElementById('editActive').value === 'true',
+                receives_voucher_notifications: document.getElementById('editNotifications').checked
             };
             
             try {

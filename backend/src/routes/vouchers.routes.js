@@ -448,16 +448,16 @@ router.post('/', authMiddleware, async (req, res) => {
             }
         }
 
-        // Send admin notification
+        // Send admin notification to all users who should receive notifications
         if (shouldSendToAdmin) {
             try {
-                const adminEmailSetting = await db.query(
-                    "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
+                const notificationRecipients = await db.query(
+                    "SELECT email FROM users WHERE is_active = true AND receives_voucher_notifications = true"
                 );
-                if (adminEmailSetting.rows.length > 0) {
-                    const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
+                if (notificationRecipients.rows.length > 0) {
+                    const adminEmails = notificationRecipients.rows.map(r => r.email);
                     await emailService.sendAdminNotificationEmail({
-                        adminEmail,
+                        adminEmails,
                         voucherNumber: voucher_number,
                         amount: displayAmount,
                         buyerName: buyer_name || customer_name || 'נוצר דרך ממשק הניהול',

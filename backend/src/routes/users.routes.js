@@ -7,13 +7,27 @@ const { authMiddleware, adminOnly } = require('../middleware/auth');
 router.get('/', authMiddleware, adminOnly, async (req, res) => {
     try {
         const result = await db.query(
-            `SELECT id, email, name, role, is_active, password_created, created_at, last_login 
+            `SELECT id, email, name, role, is_active, password_created, receives_voucher_notifications, created_at, last_login 
              FROM users ORDER BY created_at DESC`
         );
         res.json(result.rows);
     } catch (error) {
         console.error('Get users error:', error);
         res.status(500).json({ error: true, message: 'שגיאה בטעינת משתמשים' });
+    }
+});
+
+// Get users who should receive voucher notifications (internal use)
+router.get('/notification-recipients', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT email, name FROM users 
+             WHERE is_active = true AND receives_voucher_notifications = true`
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get notification recipients error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה בטעינת נמענים' });
     }
 });
 
@@ -51,7 +65,7 @@ router.post('/', authMiddleware, adminOnly, async (req, res) => {
 router.put('/:id', authMiddleware, adminOnly, async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, role, is_active } = req.body;
+        const { name, role, is_active, receives_voucher_notifications } = req.body;
 
         // Prevent admin from deactivating themselves
         if (parseInt(id) === req.user.id && is_active === false) {
@@ -59,11 +73,15 @@ router.put('/:id', authMiddleware, adminOnly, async (req, res) => {
         }
 
         const result = await db.query(
-            `UPDATE users SET name = COALESCE($1, name), role = COALESCE($2, role), 
-             is_active = COALESCE($3, is_active), updated_at = NOW() 
-             WHERE id = $4 
-             RETURNING id, email, name, role, is_active`,
-            [name, role, is_active, id]
+            `UPDATE users SET 
+             name = COALESCE($1, name), 
+             role = COALESCE($2, role), 
+             is_active = COALESCE($3, is_active),
+             receives_voucher_notifications = COALESCE($4, receives_voucher_notifications),
+             updated_at = NOW() 
+             WHERE id = $5 
+             RETURNING id, email, name, role, is_active, receives_voucher_notifications`,
+            [name, role, is_active, receives_voucher_notifications, id]
         );
 
         if (result.rows.length === 0) {

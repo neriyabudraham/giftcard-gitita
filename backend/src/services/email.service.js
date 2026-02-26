@@ -168,13 +168,15 @@ async function sendPasswordResetEmail(to, name, token) {
 }
 
 async function sendAdminNotificationEmail(data) {
-    const { adminEmail, voucherNumber, amount, buyerName, buyerEmail, buyerPhone, recipientName } = data;
+    const { adminEmails, voucherNumber, amount, buyerName, buyerEmail, buyerPhone, recipientName } = data;
     
-    if (!adminEmail) return;
+    // Support both single email (string) and multiple emails (array)
+    const emails = Array.isArray(adminEmails) ? adminEmails : (adminEmails ? [adminEmails] : []);
+    if (emails.length === 0) return;
 
     const mailOptions = {
         from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
-        to: adminEmail,
+        to: emails.join(', '),
         subject: `רכישה חדשה! שובר ${voucherNumber} - ${amount}`,
         html: `
 <!DOCTYPE html>
@@ -220,20 +222,22 @@ async function sendAdminNotificationEmail(data) {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`Admin notification sent to ${adminEmail}`);
+        console.log(`Admin notification sent to ${emails.join(', ')}`);
     } catch (error) {
         console.error('Error sending admin notification:', error);
     }
 }
 
 async function sendUnmatchedVoucherNotification(data) {
-    const { adminEmail, voucherNumber, amount, payerName, payerEmail, payerPhone, paymentReference } = data;
+    const { adminEmails, voucherNumber, amount, payerName, payerEmail, payerPhone, paymentReference } = data;
     
-    if (!adminEmail) return;
+    // Support both single email (string) and multiple emails (array)
+    const emails = Array.isArray(adminEmails) ? adminEmails : (adminEmails ? [adminEmails] : []);
+    if (emails.length === 0) return;
 
     const mailOptions = {
         from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
-        to: adminEmail,
+        to: emails.join(', '),
         subject: `⚠️ שובר נוצר ללא לקוח מזוהה - ${voucherNumber}`,
         html: `
 <!DOCTYPE html>
@@ -292,7 +296,7 @@ async function sendUnmatchedVoucherNotification(data) {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`Unmatched voucher notification sent to ${adminEmail}`);
+        console.log(`Unmatched voucher notification sent to ${emails.join(', ')}`);
     } catch (error) {
         console.error('Error sending unmatched voucher notification:', error);
     }
