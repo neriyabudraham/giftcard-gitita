@@ -226,8 +226,81 @@ async function sendAdminNotificationEmail(data) {
     }
 }
 
+async function sendUnmatchedVoucherNotification(data) {
+    const { adminEmail, voucherNumber, amount, payerName, payerEmail, payerPhone, paymentReference } = data;
+    
+    if (!adminEmail) return;
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
+        to: adminEmail,
+        subject: `⚠️ שובר נוצר ללא לקוח מזוהה - ${voucherNumber}`,
+        html: `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f59e0b; padding-bottom: 20px; }
+        h1 { color: #f59e0b; margin: 0; }
+        .content { line-height: 1.8; color: #333; }
+        .warning-box { background: #fef3c7; border-radius: 10px; padding: 20px; margin: 20px 0; border-right: 4px solid #f59e0b; }
+        .info-box { background: #f0fdf4; border-radius: 10px; padding: 20px; margin: 20px 0; border-right: 4px solid #22c55e; }
+        .info-box p, .warning-box p { margin: 8px 0; }
+        .info-box strong { color: #166534; }
+        .warning-box strong { color: #92400e; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9rem; }
+        .action-note { background: #dbeafe; padding: 15px; border-radius: 10px; margin-top: 20px; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ שובר נוצר ללא לקוח מזוהה</h1>
+        </div>
+        <div class="content">
+            <div class="warning-box">
+                <p><strong>שים לב:</strong> התקבל תשלום והשובר נוצר במערכת, אך לא זוהה לקוח תואם.</p>
+                <p>השובר <strong>לא נשלח</strong> לאף אחד.</p>
+            </div>
+            
+            <div class="info-box">
+                <p><strong>מספר שובר:</strong> ${voucherNumber}</p>
+                <p><strong>סכום:</strong> ₪${amount}</p>
+                <p><strong>שם המשלם:</strong> ${payerName || 'לא ידוע'}</p>
+                <p><strong>מייל:</strong> ${payerEmail || 'לא ידוע'}</p>
+                <p><strong>טלפון:</strong> ${payerPhone || 'לא ידוע'}</p>
+                ${paymentReference ? `<p><strong>אסמכתא:</strong> ${paymentReference}</p>` : ''}
+            </div>
+            
+            <div class="action-note">
+                <p><strong>מה לעשות?</strong></p>
+                <p>1. היכנס למערכת הניהול וחפש את השובר לפי המספר</p>
+                <p>2. עדכן את פרטי הלקוח/מקבל</p>
+                <p>3. שלח את השובר ידנית מממשק הניהול</p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} שפת המדבר - מערכת ניהול שוברים</p>
+        </div>
+    </div>
+</body>
+</html>`
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Unmatched voucher notification sent to ${adminEmail}`);
+    } catch (error) {
+        console.error('Error sending unmatched voucher notification:', error);
+    }
+}
+
 module.exports = {
     sendVoucherEmail,
     sendPasswordResetEmail,
-    sendAdminNotificationEmail
+    sendAdminNotificationEmail,
+    sendUnmatchedVoucherNotification
 };

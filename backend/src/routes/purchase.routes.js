@@ -272,114 +272,194 @@ router.post('/webhook', async (req, res) => {
             [paymentAmount, `%${payerPhone ? payerPhone.slice(-9) : 'NOMATCH'}%`, payerEmail || 'NOMATCH']
         );
 
-        if (purchaseResult.rows.length === 0) {
-            console.log('No pending purchase found for:', { payerPhone, payerEmail, paymentAmount });
-            return res.status(404).json({ error: true, message: 'רכישה ממתינה לא נמצאה' });
-        }
-
-        const purchase = purchaseResult.rows[0];
-        console.log('Found purchase:', purchase.id, purchase.voucher_number);
-
         // Calculate expiry date (1 year from now)
         const expiryDate = new Date();
         expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-        // Create voucher
-        const voucherResult = await db.query(
-            `INSERT INTO vouchers 
-             (voucher_number, original_amount, remaining_amount, customer_name, phone_number, email,
-              expiry_date, greeting, buyer_name, buyer_phone, buyer_email, recipient_name, recipient_phone, product_name, status)
-             VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active')
-             RETURNING *`,
-            [
-                purchase.voucher_number,
-                purchase.amount,
-                `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
-                purchase.recipient_phone,
-                purchase.buyer_email,
-                expiryDate.toISOString().split('T')[0],
-                purchase.greeting,
-                `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
-                purchase.buyer_phone,
-                purchase.buyer_email,
-                `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
-                purchase.recipient_phone,
-                purchase.product_name // Will be null for monetary vouchers
-            ]
-        );
+        // Generate a new voucher number
+        const generateVoucherNumber = () => {
+            return Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
+        };
 
-        const voucher = voucherResult.rows[0];
+        let voucher;
+        let purchase = null;
+        let customerFound = false;
+        let voucherNumber;
+        let voucherDisplayAmount = paymentAmount;
 
-        // Update purchase status
-        await db.query(
-            'UPDATE purchases SET status = $1, voucher_id = $2, payment_id = $3, completed_at = NOW() WHERE id = $4',
-            ['completed', voucher.id, paymentReference, purchase.id]
-        );
+        if (purchaseResult.rows.length > 0) {
+            // Customer found - process normally
+            purchase = purchaseResult.rows[0];
+            customerFound = true;
+            voucherNumber = purchase.voucher_number;
+            voucherDisplayAmount = purchase.product_name || purchase.amount;
+            
+            console.log('Found purchase:', purchase.id, purchase.voucher_number);
+
+            // Create voucher linked to purchase
+            const voucherResult = await db.query(
+                `INSERT INTO vouchers 
+                 (voucher_number, original_amount, remaining_amount, customer_name, phone_number, email,
+                  expiry_date, greeting, buyer_name, buyer_phone, buyer_email, recipient_name, recipient_phone, product_name, status)
+                 VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active')
+                 RETURNING *`,
+                [
+                    purchase.voucher_number,
+                    purchase.amount,
+                    `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                    purchase.recipient_phone,
+                    purchase.buyer_email,
+                    expiryDate.toISOString().split('T')[0],
+                    purchase.greeting,
+                    `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
+                    purchase.buyer_phone,
+                    purchase.buyer_email,
+                    `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                    purchase.recipient_phone,
+                    purchase.product_name
+                ]
+            );
+            voucher = voucherResult.rows[0];
+
+            // Update purchase status
+            await db.query(
+                'UPDATE purchases SET status = $1, voucher_id = $2, payment_id = $3, completed_at = NOW() WHERE id = $4',
+                ['completed', voucher.id, paymentReference, purchase.id]
+            );
+
+        } else {
+            // No customer found - create voucher anyway with payment info
+            console.log('No pending purchase found for:', { payerPhone, payerEmail, paymentAmount });
+            console.log('Creating voucher without customer match...');
+            
+            voucherNumber = generateVoucherNumber();
+            
+            // Get default greeting
+            let defaultGreeting = '';
+            try {
+                const greetingResult = await db.query(
+                    "SELECT setting_value FROM site_settings WHERE setting_key = 'default_greeting'"
+                );
+                if (greetingResult.rows.length > 0) {
+                    defaultGreeting = JSON.parse(greetingResult.rows[0].setting_value);
+                }
+            } catch (e) {}
+
+            // Create voucher with payer info
+            const voucherResult = await db.query(
+                `INSERT INTO vouchers 
+                 (voucher_number, original_amount, remaining_amount, customer_name, phone_number, email,
+                  expiry_date, greeting, buyer_name, buyer_phone, buyer_email, status)
+                 VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active')
+                 RETURNING *`,
+                [
+                    voucherNumber,
+                    paymentAmount,
+                    payerName || 'לקוח',
+                    payerPhone,
+                    payerEmail,
+                    expiryDate.toISOString().split('T')[0],
+                    defaultGreeting,
+                    payerName,
+                    payerPhone,
+                    payerEmail
+                ]
+            );
+            voucher = voucherResult.rows[0];
+
+            // Create a purchase record for tracking
+            await db.query(
+                `INSERT INTO purchases 
+                 (voucher_number, amount, buyer_first_name, buyer_last_name, buyer_phone, buyer_email,
+                  recipient_first_name, recipient_last_name, status, payment_id, voucher_id, completed_at)
+                 VALUES ($1, $2, $3, '', $4, $5, $3, '', 'completed', $6, $7, NOW())`,
+                [voucherNumber, paymentAmount, payerName, payerPhone, payerEmail, paymentReference, voucher.id]
+            );
+        }
 
         // Generate voucher image
-        // Use product_name if available (for product vouchers), otherwise use amount
-        const voucherDisplayAmount = purchase.product_name || purchase.amount;
-        
         try {
             await voucherService.generateVoucherImage({
-                voucherId: purchase.voucher_number,
+                voucherId: voucherNumber,
                 amount: voucherDisplayAmount,
-                greeting: purchase.greeting,
-                recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                greeting: customerFound ? purchase.greeting : voucher.greeting,
+                recipientName: customerFound 
+                    ? `${purchase.recipient_first_name} ${purchase.recipient_last_name}` 
+                    : (payerName || 'לקוח יקר'),
                 expiryDate: expiryDate.toLocaleDateString('he-IL')
             });
 
             await db.query(
                 'UPDATE vouchers SET voucher_image_url = $1 WHERE id = $2',
-                [`/api/voucher/${purchase.voucher_number}/image`, voucher.id]
+                [`/api/voucher/${voucherNumber}/image`, voucher.id]
             );
         } catch (imgError) {
             console.error('Error generating voucher image:', imgError);
         }
 
-        // Send email to buyer
-        try {
-            await emailService.sendVoucherEmail({
-                to: purchase.buyer_email,
-                buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
-                voucherNumber: purchase.voucher_number,
-                amount: voucherDisplayAmount, // Use product name if available
-                voucherId: purchase.voucher_number,
-                recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
-                greeting: purchase.greeting,
-                expiryDate: expiryDate
-            });
-            console.log('Email sent to:', purchase.buyer_email);
-        } catch (emailError) {
-            console.error('Error sending email:', emailError);
-        }
-
-        // Send admin notification
-        try {
-            const adminEmailSetting = await db.query(
-                "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
-            );
-            if (adminEmailSetting.rows.length > 0) {
-                const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
-                await emailService.sendAdminNotificationEmail({
-                    adminEmail,
-                    voucherNumber: purchase.voucher_number,
-                    amount: voucherDisplayAmount,
+        if (customerFound) {
+            // Send email to buyer (customer was found)
+            try {
+                await emailService.sendVoucherEmail({
+                    to: purchase.buyer_email,
                     buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
-                    buyerEmail: purchase.buyer_email,
-                    buyerPhone: purchase.buyer_phone,
-                    recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`
+                    voucherNumber: voucherNumber,
+                    amount: voucherDisplayAmount,
+                    voucherId: voucherNumber,
+                    recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                    greeting: purchase.greeting,
+                    expiryDate: expiryDate
                 });
+                console.log('Email sent to customer:', purchase.buyer_email);
+            } catch (emailError) {
+                console.error('Error sending email:', emailError);
             }
-        } catch (adminEmailError) {
-            console.error('Error sending admin notification:', adminEmailError);
+
+            // Send admin notification
+            try {
+                const adminEmailSetting = await db.query(
+                    "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
+                );
+                if (adminEmailSetting.rows.length > 0) {
+                    const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
+                    await emailService.sendAdminNotificationEmail({
+                        adminEmail,
+                        voucherNumber: voucherNumber,
+                        amount: voucherDisplayAmount,
+                        buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
+                        buyerEmail: purchase.buyer_email,
+                        buyerPhone: purchase.buyer_phone,
+                        recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`
+                    });
+                }
+            } catch (adminEmailError) {
+                console.error('Error sending admin notification:', adminEmailError);
+            }
+        } else {
+            // No customer found - send notification to admin about unmatched voucher
+            const adminNotifyEmail = 'netanelbar9@gmail.com';
+            try {
+                await emailService.sendUnmatchedVoucherNotification({
+                    adminEmail: adminNotifyEmail,
+                    voucherNumber: voucherNumber,
+                    amount: paymentAmount,
+                    payerName: payerName,
+                    payerEmail: payerEmail,
+                    payerPhone: payerPhone,
+                    paymentReference: paymentReference
+                });
+                console.log('Unmatched voucher notification sent to:', adminNotifyEmail);
+            } catch (notifyError) {
+                console.error('Error sending unmatched voucher notification:', notifyError);
+            }
         }
 
         res.json({ 
             success: true, 
-            message: 'שובר נוצר בהצלחה',
-            voucherNumber: purchase.voucher_number,
-            purchaseId: purchase.id
+            message: customerFound ? 'שובר נוצר ונשלח ללקוח' : 'שובר נוצר (ללא לקוח מזוהה)',
+            voucherNumber: voucherNumber,
+            customerFound: customerFound,
+            purchaseId: purchase ? purchase.id : null
         });
 
     } catch (error) {
