@@ -11,7 +11,7 @@
             font-family: 'Assistant', sans-serif;
             min-height: 100vh;
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            color: #f0f0f0;
+            color: white;
         }
         .navbar {
             background: rgba(0,0,0,0.3);
@@ -21,19 +21,46 @@
             align-items: center;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .navbar h1 { color: #FFD700; font-size: 1.5rem; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a {
-            color: #ddd;
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .navbar-brand img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+        }
+        .navbar-brand h1 {
+            font-size: 1.3rem;
+            color: #FFD700;
+        }
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .user-name { color: #ccc; }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .nav-link {
+            color: #ccc;
             text-decoration: none;
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
         }
-        .nav-links a:hover, .nav-links a.active {
+        .nav-link:hover, .nav-link.active {
             background: rgba(255,215,0,0.2);
             color: #FFD700;
         }
+        .btn-logout {
+            background: rgba(220,53,69,0.3);
+            color: #ff6b6b;
+        }
+        .btn-logout:hover { background: rgba(220,53,69,0.5); }
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -226,15 +253,20 @@
 </head>
 <body>
     <nav class="navbar">
-        <h1>🎁 מערכת שוברים</h1>
-        <div class="nav-links">
-            <a href="/admin/">שוברים</a>
-            <a href="/admin/leads">לידים</a>
-            <a href="/admin/products">מוצרים</a>
-            <a href="/admin/settings" class="active">הגדרות אתר</a>
-            <a href="/admin/users">משתמשים</a>
-            <a href="/" target="_blank">לאתר</a>
-            <a href="#" onclick="logout()">יציאה</a>
+        <div class="navbar-brand">
+            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6d6e7c_לוגועגול.png" alt="Logo">
+            <h1>מערכת ניהול שוברים</h1>
+        </div>
+        <div class="navbar-user">
+            <div class="nav-links">
+                <a href="/admin/" class="nav-link">שוברים</a>
+                <a href="/admin/leads" class="nav-link">לידים</a>
+                <a href="/admin/products" class="nav-link">מוצרים</a>
+                <a href="/admin/settings" class="nav-link active">הגדרות</a>
+                <a href="/admin/users" class="nav-link" id="usersLink" style="display:none">משתמשים</a>
+            </div>
+            <span class="user-name" id="userName"></span>
+            <button class="btn btn-logout" onclick="logout()">יציאה</button>
         </div>
     </nav>
 
@@ -348,9 +380,14 @@
                 const res = await fetch(`${API}/auth/me`, { credentials: 'include' });
                 if (!res.ok) {
                     window.location.href = '/admin/login';
-                } else {
-                    loadSettings();
+                    return;
                 }
+                const data = await res.json();
+                document.getElementById('userName').textContent = data.user.name || data.user.email;
+                if (data.user.role === 'admin') {
+                    document.getElementById('usersLink').style.display = 'block';
+                }
+                loadSettings();
             } catch {
                 window.location.href = '/admin/login';
             }
