@@ -640,16 +640,32 @@
             const voucher = vouchers.find(v => v.id === id);
             if (!voucher) return;
             
+            const isProductVoucher = voucher.product_name && voucher.product_name.length > 0;
+            const amountInput = document.getElementById('useAmount');
+            
             document.getElementById('useVoucherId').value = id;
-            document.getElementById('useAmount').max = voucher.remaining_amount;
-            document.getElementById('useAmount').value = '';
+            amountInput.max = voucher.remaining_amount;
             document.getElementById('useNotes').value = '';
             
-            document.getElementById('useVoucherDetails').innerHTML = `
-                <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
-                <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>
-                <p><span>יתרה נוכחית:</span> <strong>₪${Number.isInteger(parseFloat(voucher.remaining_amount)) ? parseInt(voucher.remaining_amount) : parseFloat(voucher.remaining_amount).toLocaleString()}</strong></p>
-            `;
+            if (isProductVoucher) {
+                // Product vouchers - auto-set full amount and disable
+                amountInput.value = voucher.remaining_amount;
+                amountInput.disabled = true;
+                document.getElementById('useVoucherDetails').innerHTML = `
+                    <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
+                    <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>
+                    <p><span>מוצר:</span> <strong>${voucher.product_name}</strong></p>
+                    <p style="color:#fbbf24;font-size:0.9rem;margin-top:10px">⚠️ שובר מוצר - מימוש מלא בלבד</p>
+                `;
+            } else {
+                amountInput.value = '';
+                amountInput.disabled = false;
+                document.getElementById('useVoucherDetails').innerHTML = `
+                    <p><span>מספר שובר:</span> <strong>${voucher.voucher_number}</strong></p>
+                    <p><span>שם לקוח:</span> <strong>${voucher.customer_name || '-'}</strong></p>
+                    <p><span>יתרה נוכחית:</span> <strong>₪${Number.isInteger(parseFloat(voucher.remaining_amount)) ? parseInt(voucher.remaining_amount) : parseFloat(voucher.remaining_amount).toLocaleString()}</strong></p>
+                `;
+            }
             
             document.getElementById('useModal').classList.add('show');
         }

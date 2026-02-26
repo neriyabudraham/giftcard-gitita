@@ -484,11 +484,7 @@
                         
                         <div class="redemption-form" id="redemptionForm">
                             <h4>מימוש שובר</h4>
-                            <div class="form-group">
-                                <label>קוד צוות (4 ספרות)</label>
-                                <input type="password" id="staffPin" maxlength="4" pattern="\d{4}" placeholder="הזן קוד צוות">
-                            </div>
-                            <div class="form-group">
+                            <div class="form-group" id="amountGroup">
                                 <label>סכום למימוש</label>
                                 <input type="number" id="redeemAmount" min="1" placeholder="הזן סכום">
                                 <div class="quick-amounts" id="quickAmounts"></div>
@@ -654,7 +650,6 @@
             // Reset redemption form
             document.getElementById('redemptionForm').classList.remove('show');
             document.getElementById('redemptionSuccess').style.display = 'none';
-            document.getElementById('staffPin').value = '';
             if (!isProductVoucher) document.getElementById('redeemAmount').value = '';
             document.getElementById('redeemNotes').value = '';
         }
@@ -668,14 +663,8 @@
         }
         
         async function redeemVoucher() {
-            const pin = document.getElementById('staffPin').value;
             const amount = parseFloat(document.getElementById('redeemAmount').value);
             const notes = document.getElementById('redeemNotes').value;
-            
-            if (!pin || pin.length !== 4) {
-                alert('נא להזין קוד צוות (4 ספרות)');
-                return;
-            }
             
             if (!amount || amount <= 0) {
                 alert('נא להזין סכום למימוש');
@@ -698,8 +687,7 @@
                     body: JSON.stringify({
                         voucher_number: currentVoucher.voucher_number,
                         amount,
-                        notes,
-                        staff_pin: pin
+                        notes
                     })
                 });
                 

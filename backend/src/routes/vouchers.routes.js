@@ -143,12 +143,7 @@ const STAFF_PIN = process.env.STAFF_PIN || '1234';
 
 router.post('/public-redeem', rateLimitMiddleware, async (req, res) => {
     try {
-        const { voucher_number, amount, notes, staff_pin } = req.body;
-
-        // Verify staff PIN
-        if (!staff_pin || staff_pin !== STAFF_PIN) {
-            return res.status(403).json({ error: true, message: 'קוד צוות שגוי' });
-        }
+        const { voucher_number, amount, notes } = req.body;
 
         if (!voucher_number || !amount) {
             return res.status(400).json({ error: true, message: 'נדרש מספר שובר וסכום' });
@@ -537,6 +532,7 @@ router.post('/:id/use', authMiddleware, async (req, res) => {
         }
 
         const voucher = voucherResult.rows[0];
+        const isProductVoucher = voucher.product_name && voucher.product_name.length > 0;
 
         if (voucher.status !== 'active') {
             return res.status(400).json({ error: true, message: 'השובר אינו פעיל' });
@@ -544,6 +540,15 @@ router.post('/:id/use', authMiddleware, async (req, res) => {
 
         if (voucher.expiry_date && new Date(voucher.expiry_date) < new Date()) {
             return res.status(400).json({ error: true, message: 'תוקף השובר פג' });
+        }
+
+        // Product vouchers can only be fully redeemed
+        if (isProductVoucher && parseFloat(amount) !== parseFloat(voucher.remaining_amount)) {
+            return res.status(400).json({ 
+                error: true, 
+                message: 'שובר מוצר ניתן למימוש מלא בלבד',
+                isProductVoucher: true
+            });
         }
 
         if (amount > voucher.remaining_amount) {
