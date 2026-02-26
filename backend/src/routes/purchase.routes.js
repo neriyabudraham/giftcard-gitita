@@ -378,8 +378,9 @@ router.post('/webhook', async (req, res) => {
         }
 
         // Generate voucher image
+        let imageBuffer = null;
         try {
-            await voucherService.generateVoucherImage({
+            imageBuffer = await voucherService.generateVoucherImage({
                 voucherId: voucherNumber,
                 amount: voucherDisplayAmount,
                 greeting: customerFound ? purchase.greeting : voucher.greeting,
@@ -408,7 +409,8 @@ router.post('/webhook', async (req, res) => {
                     voucherId: voucherNumber,
                     recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
                     greeting: purchase.greeting,
-                    expiryDate: expiryDate
+                    expiryDate: expiryDate,
+                    imageBuffer
                 });
                 console.log('Email sent to customer:', purchase.buyer_email);
             } catch (emailError) {
@@ -429,7 +431,8 @@ router.post('/webhook', async (req, res) => {
                         buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
                         buyerEmail: purchase.buyer_email,
                         buyerPhone: purchase.buyer_phone,
-                        recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`
+                        recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                        imageBuffer
                     });
                 }
             } catch (adminEmailError) {
@@ -450,7 +453,8 @@ router.post('/webhook', async (req, res) => {
                         payerName: payerName,
                         payerEmail: payerEmail,
                         payerPhone: payerPhone,
-                        paymentReference: paymentReference
+                        paymentReference: paymentReference,
+                        imageBuffer
                     });
                     console.log('Unmatched voucher notification sent to:', adminEmails.join(', '));
                 }

@@ -168,16 +168,27 @@ async function sendPasswordResetEmail(to, name, token) {
 }
 
 async function sendAdminNotificationEmail(data) {
-    const { adminEmails, voucherNumber, amount, buyerName, buyerEmail, buyerPhone, recipientName } = data;
+    const { adminEmails, voucherNumber, amount, buyerName, buyerEmail, buyerPhone, recipientName, imageBuffer } = data;
     
     // Support both single email (string) and multiple emails (array)
     const emails = Array.isArray(adminEmails) ? adminEmails : (adminEmails ? [adminEmails] : []);
     if (emails.length === 0) return;
 
+    // Prepare attachments if image is provided
+    const attachments = [];
+    if (imageBuffer) {
+        attachments.push({
+            filename: `voucher-${voucherNumber}.png`,
+            content: imageBuffer,
+            cid: 'voucherImage'
+        });
+    }
+
     const mailOptions = {
         from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
         to: emails.join(', '),
         subject: `רכישה חדשה! שובר ${voucherNumber} - ${amount}`,
+        attachments,
         html: `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -210,6 +221,12 @@ async function sendAdminNotificationEmail(data) {
                 <p><strong>טלפון:</strong> ${buyerPhone || '-'}</p>
                 ${recipientName ? `<p><strong>מקבל השובר:</strong> ${recipientName}</p>` : ''}
             </div>
+            ${imageBuffer ? `
+            <div style="text-align:center; margin: 25px 0;">
+                <p style="color:#166534; font-weight:600; margin-bottom:15px;">השובר:</p>
+                <img src="cid:voucherImage" alt="שובר מתנה" style="max-width:100%; border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            </div>
+            ` : ''}
             <p>תוכל לצפות בפרטים המלאים במערכת הניהול.</p>
         </div>
         <div class="footer">
@@ -229,16 +246,27 @@ async function sendAdminNotificationEmail(data) {
 }
 
 async function sendUnmatchedVoucherNotification(data) {
-    const { adminEmails, voucherNumber, amount, payerName, payerEmail, payerPhone, paymentReference } = data;
+    const { adminEmails, voucherNumber, amount, payerName, payerEmail, payerPhone, paymentReference, imageBuffer } = data;
     
     // Support both single email (string) and multiple emails (array)
     const emails = Array.isArray(adminEmails) ? adminEmails : (adminEmails ? [adminEmails] : []);
     if (emails.length === 0) return;
 
+    // Prepare attachments if image is provided
+    const attachments = [];
+    if (imageBuffer) {
+        attachments.push({
+            filename: `voucher-${voucherNumber}.png`,
+            content: imageBuffer,
+            cid: 'voucherImage'
+        });
+    }
+
     const mailOptions = {
         from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
         to: emails.join(', '),
         subject: `⚠️ שובר נוצר ללא לקוח מזוהה - ${voucherNumber}`,
+        attachments,
         html: `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -278,6 +306,13 @@ async function sendUnmatchedVoucherNotification(data) {
                 <p><strong>טלפון:</strong> ${payerPhone || 'לא ידוע'}</p>
                 ${paymentReference ? `<p><strong>אסמכתא:</strong> ${paymentReference}</p>` : ''}
             </div>
+            
+            ${imageBuffer ? `
+            <div style="text-align:center; margin: 25px 0;">
+                <p style="color:#166534; font-weight:600; margin-bottom:15px;">השובר שנוצר:</p>
+                <img src="cid:voucherImage" alt="שובר מתנה" style="max-width:100%; border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            </div>
+            ` : ''}
             
             <div class="action-note">
                 <p><strong>מה לעשות?</strong></p>

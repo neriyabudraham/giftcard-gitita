@@ -463,7 +463,8 @@ router.post('/', authMiddleware, async (req, res) => {
                         buyerName: buyer_name || customer_name || 'נוצר דרך ממשק הניהול',
                         buyerEmail: buyer_email || email,
                         buyerPhone: buyer_phone || phone_number,
-                        recipientName: recipient_name
+                        recipientName: recipient_name,
+                        imageBuffer
                     });
                 }
             } catch (adminEmailError) {
