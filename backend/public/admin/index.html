@@ -531,6 +531,13 @@
                     return;
                 }
                 
+                // Check for search parameter in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const searchParam = urlParams.get('search');
+                if (searchParam) {
+                    document.getElementById('searchInput').value = searchParam;
+                }
+                
                 loadVouchers();
                 loadStats();
                 

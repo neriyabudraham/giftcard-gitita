@@ -211,6 +211,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .voucher-item:hover {
+            background: rgba(255,215,0,0.1);
+            transform: translateX(-5px);
         }
         .voucher-item .number { font-family: monospace; color: #FFD700; }
         .voucher-item .amount { font-weight: 600; }
@@ -542,7 +549,7 @@
                     ${lead.vouchers && lead.vouchers.length > 0 ? `
                         <div class="vouchers-list">
                             ${lead.vouchers.map(v => `
-                                <div class="voucher-item">
+                                <a href="/admin/?search=${v.voucher_number}" class="voucher-item">
                                     <div>
                                         <span class="number">${v.voucher_number}</span>
                                         <span class="recipient">${v.recipient_name ? '→ ' + v.recipient_name : ''}</span>
@@ -553,7 +560,7 @@
                                             ${v.status === 'completed' ? 'הושלם' : v.status === 'pending' ? 'ממתין' : v.status}
                                         </span>
                                     </div>
-                                </div>
+                                </a>
                             `).join('')}
                         </div>
                     ` : '<p style="color:#666;font-size:0.9rem">אין שוברים</p>'}
