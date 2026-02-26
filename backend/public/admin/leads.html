@@ -250,6 +250,17 @@
         }
         .btn-whatsapp { background: #25D366; color: white; }
         .btn-email { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-delete { 
+            background: rgba(220,53,69,0.2); 
+            color: #dc3545; 
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .btn-delete:hover { background: rgba(220,53,69,0.4); }
         
         .import-btn {
             display: flex;
@@ -540,6 +551,7 @@
                             <div class="contact-btns">
                                 ${lead.phone ? `<a href="https://wa.me/972${lead.phone.replace(/^0/, '')}" target="_blank" class="btn-whatsapp">WhatsApp</a>` : ''}
                                 ${lead.email ? `<a href="mailto:${lead.email}" class="btn-email">שלח מייל</a>` : ''}
+                                <button onclick="deleteLead('${lead.email}')" class="btn-delete" title="מחק">🗑️ מחק</button>
                             </div>
                         </div>
                         <span class="lead-status ${lead.type === 'customer' ? 'status-customer' : 'status-lead'}">
@@ -573,6 +585,48 @@
         async function logout() {
             await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' });
             window.location.href = '/admin/login';
+        }
+
+        async function deleteLead(email) {
+            const lead = allLeads.find(l => l.email === email);
+            if (!lead) return;
+            
+            const type = lead.type === 'customer' ? 'לקוח' : 'מתעניין';
+            if (!confirm(`האם למחוק את ה${type} "${lead.name || email}"?\n\nכל הרכישות שלו יימחקו!\nפעולה זו אינה ניתנת לביטול.`)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/leads/by-email/${encodeURIComponent(email)}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showNotification(`נמחקו ${result.deletedCount} רשומות`, 'success');
+                    await loadLeads();
+                } else {
+                    alert(result.message || 'שגיאה במחיקה');
+                }
+            } catch (error) {
+                console.error('Delete lead error:', error);
+                alert('שגיאה במחיקה');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                padding: 15px 30px; border-radius: 10px; z-index: 10000;
+                background: ${type === 'success' ? 'rgba(34,197,94,0.9)' : 'rgba(59,130,246,0.9)'};
+                color: white; font-weight: 600; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
         }
 
         // Import functionality

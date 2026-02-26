@@ -356,6 +356,56 @@
         </div>
     </div>
 
+    <!-- Edit Voucher Modal -->
+    <div class="modal" id="editVoucherModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>עריכת שובר</h3>
+                <button class="modal-close" onclick="closeModal('editVoucherModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editVoucherForm">
+                    <input type="hidden" id="editVoucherId">
+                    <div class="form-group">
+                        <label>מספר שובר</label>
+                        <input type="text" id="editVoucherNumber" readonly style="opacity:0.7">
+                    </div>
+                    <div class="form-group">
+                        <label>שם לקוח</label>
+                        <input type="text" id="editCustomerName">
+                    </div>
+                    <div class="form-group">
+                        <label>טלפון</label>
+                        <input type="tel" id="editPhoneNumber">
+                    </div>
+                    <div class="form-group">
+                        <label>סכום מקורי</label>
+                        <input type="number" id="editOriginalAmount" readonly style="opacity:0.7">
+                    </div>
+                    <div class="form-group">
+                        <label>יתרה נוכחית</label>
+                        <input type="number" id="editRemainingAmount" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>תאריך תפוגה</label>
+                        <input type="date" id="editExpiryDate">
+                    </div>
+                    <div class="form-group">
+                        <label>סטטוס</label>
+                        <select id="editStatus">
+                            <option value="active">פעיל</option>
+                            <option value="used">נוצל</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:20px">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editVoucherModal')" style="flex:1">ביטול</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1">שמור שינויים</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Voucher Modal -->
     <div class="modal" id="createModal">
         <div class="modal-content" style="max-width:700px">
@@ -634,6 +684,8 @@
                                         <button class="btn btn-sm btn-primary" onclick="downloadVoucher('${v.voucher_number}')" title="הורדה">⬇</button>
                                         ${v.status === 'active' && !isExpired ? 
                                             `<button class="btn btn-sm btn-success" onclick="openUseModal(${v.id})">שימוש</button>` : ''}
+                                        <button class="btn btn-sm" style="background:rgba(255,193,7,0.2);color:#ffc107" onclick="openEditVoucherModal(${v.id})" title="עריכה">✏️</button>
+                                        <button class="btn btn-sm" style="background:rgba(220,53,69,0.2);color:#dc3545" onclick="deleteVoucher(${v.id})" title="מחיקה">🗑️</button>
                                     </td>
                                 </tr>`;
                         }).join('')}
@@ -1005,6 +1057,101 @@
                 if (e.target === modal) closeModal(modal.id);
             });
         });
+
+        // Edit voucher functions
+        function openEditVoucherModal(id) {
+            const voucher = vouchers.find(v => v.id === id);
+            if (!voucher) return;
+            
+            document.getElementById('editVoucherId').value = id;
+            document.getElementById('editVoucherNumber').value = voucher.voucher_number;
+            document.getElementById('editCustomerName').value = voucher.customer_name || '';
+            document.getElementById('editPhoneNumber').value = voucher.phone_number || '';
+            document.getElementById('editOriginalAmount').value = voucher.original_amount;
+            document.getElementById('editRemainingAmount').value = voucher.remaining_amount;
+            document.getElementById('editExpiryDate').value = voucher.expiry_date ? voucher.expiry_date.split('T')[0] : '';
+            document.getElementById('editStatus').value = voucher.status;
+            
+            document.getElementById('editVoucherModal').classList.add('show');
+        }
+
+        document.getElementById('editVoucherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editVoucherId').value;
+            const data = {
+                customer_name: document.getElementById('editCustomerName').value,
+                phone_number: document.getElementById('editPhoneNumber').value,
+                remaining_amount: parseFloat(document.getElementById('editRemainingAmount').value),
+                expiry_date: document.getElementById('editExpiryDate').value || null,
+                status: document.getElementById('editStatus').value
+            };
+            
+            try {
+                const res = await fetch(`${API}/vouchers/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    closeModal('editVoucherModal');
+                    loadVouchers();
+                    loadStats();
+                    showNotification('השובר עודכן בהצלחה', 'success');
+                } else {
+                    alert(result.message || 'שגיאה בעדכון');
+                }
+            } catch (error) {
+                console.error('Edit voucher error:', error);
+                alert('שגיאה בעדכון השובר');
+            }
+        });
+
+        async function deleteVoucher(id) {
+            const voucher = vouchers.find(v => v.id === id);
+            if (!voucher) return;
+            
+            if (!confirm(`האם למחוק את שובר ${voucher.voucher_number}?\n\nפעולה זו אינה ניתנת לביטול!`)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/vouchers/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    loadVouchers();
+                    loadStats();
+                    showNotification('השובר נמחק בהצלחה', 'success');
+                } else {
+                    alert(result.message || 'שגיאה במחיקה');
+                }
+            } catch (error) {
+                console.error('Delete voucher error:', error);
+                alert('שגיאה במחיקת השובר');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                padding: 15px 30px; border-radius: 10px; z-index: 10000;
+                background: ${type === 'success' ? 'rgba(34,197,94,0.9)' : 'rgba(59,130,246,0.9)'};
+                color: white; font-weight: 600; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
 
         init();
     </script>

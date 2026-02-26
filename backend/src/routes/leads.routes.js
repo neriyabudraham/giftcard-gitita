@@ -149,6 +149,50 @@ router.post('/import', authMiddleware, async (req, res) => {
     }
 });
 
+// Delete lead/customer by email (deletes all purchases for this email)
+router.delete('/by-email/:email', authMiddleware, async (req, res) => {
+    try {
+        const { email } = req.params;
+        
+        const result = await db.query(
+            'DELETE FROM purchases WHERE buyer_email = $1 OR buyer_phone = $1 RETURNING id',
+            [email]
+        );
+        
+        res.json({ 
+            success: true, 
+            deletedCount: result.rows.length,
+            message: `נמחקו ${result.rows.length} רשומות`
+        });
+        
+    } catch (error) {
+        console.error('Delete lead error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה במחיקת ליד' });
+    }
+});
+
+// Delete single purchase by voucher number
+router.delete('/purchase/:voucherNumber', authMiddleware, async (req, res) => {
+    try {
+        const { voucherNumber } = req.params;
+        
+        const result = await db.query(
+            'DELETE FROM purchases WHERE voucher_number = $1 RETURNING id',
+            [voucherNumber]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: true, message: 'רכישה לא נמצאה' });
+        }
+        
+        res.json({ success: true, message: 'הרכישה נמחקה בהצלחה' });
+        
+    } catch (error) {
+        console.error('Delete purchase error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה במחיקת רכישה' });
+    }
+});
+
 // Get single lead details
 router.get('/:email', authMiddleware, async (req, res) => {
     try {
