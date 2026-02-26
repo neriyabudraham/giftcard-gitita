@@ -364,6 +364,12 @@
             </div>
             <div class="modal-body">
                 <form id="createForm">
+                    <div class="form-group" style="margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #0f3460">
+                        <label style="font-weight:600;color:#fbbf24">בחירת מוצר מהקטלוג</label>
+                        <select id="createProductSelect" onchange="selectProduct()" style="width:100%;padding:12px;margin-top:8px">
+                            <option value="">-- בחר מוצר או הזן ידנית --</option>
+                        </select>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
                         <div class="form-group">
                             <label>מספר שובר (13 ספרות)</label>
@@ -592,10 +598,56 @@
             }
         }
 
+        let productsCache = [];
+        
+        async function loadProductsForCreate() {
+            try {
+                const res = await fetch(`${API}/products`, { credentials: 'include' });
+                const data = await res.json();
+                productsCache = data.products || [];
+                
+                const select = document.getElementById('createProductSelect');
+                select.innerHTML = '<option value="">-- בחר מוצר או הזן ידנית --</option>';
+                
+                productsCache.forEach(p => {
+                    const price = Number.isInteger(p.price) ? p.price : parseFloat(p.price).toFixed(0);
+                    const isMonetary = p.name.includes('₪') || p.name.includes('שובר');
+                    select.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}" data-monetary="${isMonetary}">${p.name} - ₪${price}</option>`;
+                });
+            } catch (e) {
+                console.error('Error loading products:', e);
+            }
+        }
+        
+        function selectProduct() {
+            const select = document.getElementById('createProductSelect');
+            const option = select.options[select.selectedIndex];
+            
+            if (!option.value) return;
+            
+            const price = parseFloat(option.dataset.price);
+            const name = option.dataset.name;
+            const isMonetary = option.dataset.monetary === 'true';
+            
+            if (isMonetary) {
+                document.getElementById('createVoucherType').value = 'monetary';
+                document.getElementById('createAmount').value = price;
+            } else {
+                document.getElementById('createVoucherType').value = 'product';
+                document.getElementById('createProductName').value = name;
+                document.getElementById('createAmount').value = price;
+            }
+            
+            toggleProductName();
+        }
+
         function openCreateModal() {
             document.getElementById('createForm').reset();
             generateVoucherNumber();
             toggleProductName();
+            
+            // Load products
+            loadProductsForCreate();
             
             // Set default expiry date to 1 year from now
             const expiryDate = new Date();
