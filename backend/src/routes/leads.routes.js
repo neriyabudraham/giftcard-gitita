@@ -6,30 +6,40 @@ const { authMiddleware } = require('../middleware/auth');
 // Get all leads and customers
 router.get('/', authMiddleware, async (req, res) => {
     try {
+        // First, clean up old pending purchases (older than 24 hours)
+        await db.query(`
+            DELETE FROM purchases 
+            WHERE status = 'pending' 
+            AND created_at < NOW() - INTERVAL '24 hours'
+        `);
+
         // Get all unique buyers - group by email (primary identifier)
+        // A customer is someone who has a voucher in the vouchers table
         const purchasesResult = await db.query(`
             SELECT 
-                COALESCE(NULLIF(TRIM(buyer_email), ''), NULLIF(TRIM(buyer_phone), ''), '') as email,
-                MAX(COALESCE(NULLIF(TRIM(buyer_phone), ''), '')) as phone,
-                MAX(TRIM(CONCAT(COALESCE(TRIM(buyer_first_name), ''), ' ', COALESCE(TRIM(buyer_last_name), '')))) as name,
-                MIN(created_at) as created_at,
+                COALESCE(NULLIF(TRIM(p.buyer_email), ''), NULLIF(TRIM(p.buyer_phone), ''), '') as email,
+                MAX(COALESCE(NULLIF(TRIM(p.buyer_phone), ''), '')) as phone,
+                MAX(TRIM(CONCAT(COALESCE(TRIM(p.buyer_first_name), ''), ' ', COALESCE(TRIM(p.buyer_last_name), '')))) as name,
+                MIN(p.created_at) as created_at,
                 ARRAY_AGG(
                     json_build_object(
-                        'voucher_number', voucher_number,
-                        'amount', amount,
-                        'status', status,
-                        'recipient_name', TRIM(CONCAT(COALESCE(TRIM(recipient_first_name), ''), ' ', COALESCE(TRIM(recipient_last_name), ''))),
-                        'created_at', created_at
-                    ) ORDER BY created_at DESC
+                        'voucher_number', p.voucher_number,
+                        'amount', p.amount,
+                        'status', p.status,
+                        'recipient_name', TRIM(CONCAT(COALESCE(TRIM(p.recipient_first_name), ''), ' ', COALESCE(TRIM(p.recipient_last_name), ''))),
+                        'created_at', p.created_at,
+                        'has_voucher', (SELECT COUNT(*) > 0 FROM vouchers v WHERE v.voucher_number = p.voucher_number)
+                    ) ORDER BY p.created_at DESC
                 ) as vouchers,
                 COUNT(*) as purchase_count,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count,
-                SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as total_spent
-            FROM purchases
-            WHERE (buyer_email IS NOT NULL AND TRIM(buyer_email) != '') 
-               OR (buyer_phone IS NOT NULL AND TRIM(buyer_phone) != '')
-            GROUP BY COALESCE(NULLIF(TRIM(buyer_email), ''), NULLIF(TRIM(buyer_phone), ''), '')
-            ORDER BY MAX(created_at) DESC
+                -- Customer = has at least one voucher in vouchers table
+                MAX(CASE WHEN EXISTS (SELECT 1 FROM vouchers v WHERE v.voucher_number = p.voucher_number) THEN 1 ELSE 0 END) as has_voucher,
+                SUM(CASE WHEN p.status = 'completed' THEN p.amount ELSE 0 END) as total_spent
+            FROM purchases p
+            WHERE (p.buyer_email IS NOT NULL AND TRIM(p.buyer_email) != '') 
+               OR (p.buyer_phone IS NOT NULL AND TRIM(p.buyer_phone) != '')
+            GROUP BY COALESCE(NULLIF(TRIM(p.buyer_email), ''), NULLIF(TRIM(p.buyer_phone), ''), '')
+            ORDER BY MAX(p.created_at) DESC
         `);
 
         // Process leads
@@ -40,14 +50,16 @@ router.get('/', authMiddleware, async (req, res) => {
             created_at: row.created_at,
             vouchers: row.vouchers,
             purchase_count: parseInt(row.purchase_count),
-            completed_count: parseInt(row.completed_count),
+            has_voucher: parseInt(row.has_voucher) > 0,
             total_spent: parseFloat(row.total_spent) || 0,
-            type: parseInt(row.completed_count) > 0 ? 'customer' : 'lead'
+            // Customer = has at least one voucher, Lead = no vouchers
+            type: parseInt(row.has_voucher) > 0 ? 'customer' : 'lead'
         }));
 
         // Calculate stats
+        const customers = leads.filter(l => l.type === 'customer');
         const stats = {
-            totalPurchases: leads.reduce((sum, l) => sum + l.completed_count, 0),
+            totalPurchases: customers.length,
             totalRevenue: leads.reduce((sum, l) => sum + l.total_spent, 0)
         };
 
