@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS vouchers (
     id SERIAL PRIMARY KEY,
     voucher_number VARCHAR(20) UNIQUE NOT NULL,
-    original_amount DECIMAL(10,2) NOT NULL,
-    remaining_amount DECIMAL(10,2) NOT NULL,
+    original_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    remaining_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
     customer_name VARCHAR(255),
     phone_number VARCHAR(20),
     email VARCHAR(255),
@@ -34,9 +34,13 @@ CREATE TABLE IF NOT EXISTS vouchers (
     buyer_email VARCHAR(255),
     recipient_name VARCHAR(255),
     recipient_phone VARCHAR(20),
+    product_name VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add product_name column if not exists (for migration)
+ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS product_name VARCHAR(255);
 
 -- Purchases table
 CREATE TABLE IF NOT EXISTS purchases (
@@ -44,6 +48,7 @@ CREATE TABLE IF NOT EXISTS purchases (
     voucher_id INTEGER REFERENCES vouchers(id),
     voucher_number VARCHAR(20) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
+    product_name VARCHAR(255),
     buyer_first_name VARCHAR(255),
     buyer_last_name VARCHAR(255),
     buyer_phone VARCHAR(20),
@@ -57,6 +62,9 @@ CREATE TABLE IF NOT EXISTS purchases (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
 );
+
+-- Add product_name column if not exists (for migration)
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS product_name VARCHAR(255);
 
 -- Voucher usage history
 CREATE TABLE IF NOT EXISTS voucher_usage (

@@ -16,26 +16,45 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVoucherEmail(data) {
-    const { to, buyerName, voucherNumber, amount, voucherId } = data;
+    const { to, buyerName, voucherNumber, amount, voucherId, recipientName, greeting, expiryDate, imageBuffer } = data;
 
-    const voucherPath = path.join(VOUCHERS_DIR, `${voucherId}.png`);
     let attachments = [];
 
-    try {
-        await fs.access(voucherPath);
+    // If imageBuffer is provided (from admin creation), use it directly
+    if (imageBuffer) {
         attachments.push({
             filename: `voucher-${voucherNumber}.png`,
-            path: voucherPath,
+            content: imageBuffer,
             cid: 'voucher'
         });
-    } catch {
-        console.warn('Voucher image not found for email attachment');
+    } else {
+        // Otherwise try to load from file
+        const voucherPath = path.join(VOUCHERS_DIR, `${voucherId || voucherNumber}.png`);
+        try {
+            await fs.access(voucherPath);
+            attachments.push({
+                filename: `voucher-${voucherNumber}.png`,
+                path: voucherPath,
+                cid: 'voucher'
+            });
+        } catch {
+            console.warn('Voucher image not found for email attachment');
+        }
     }
+    
+    const displayName = recipientName || buyerName || 'לקוח יקר';
+
+    // Format amount - check if it's numeric or product name
+    const numAmount = parseFloat(amount);
+    const isProductVoucher = isNaN(numAmount) || numAmount === 0;
+    const displayAmount = isProductVoucher ? amount : `₪${Number.isInteger(numAmount) ? numAmount : numAmount.toLocaleString()}`;
+    const subjectAmount = isProductVoucher ? amount : `₪${numAmount}`;
+    const expiryText = expiryDate ? new Date(expiryDate).toLocaleDateString('he-IL') : 'שנה מיום הרכישה';
 
     const mailOptions = {
         from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
         to,
-        subject: `שובר המתנה שלך - ₪${amount} | שפת המדבר`,
+        subject: `שובר המתנה שלך - ${subjectAmount} | שפת המדבר`,
         html: `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -62,15 +81,16 @@ async function sendVoucherEmail(data) {
             <h1>שובר המתנה שלך מוכן!</h1>
         </div>
         <div class="content">
-            <p>שלום ${buyerName},</p>
-            <p>תודה על רכישת שובר המתנה שלנו. מצורף השובר שלך:</p>
+            <p>שלום ${displayName},</p>
+            <p>קיבלת שובר מתנה מיוחד! מצורף השובר שלך:</p>
             <div class="voucher-info">
                 <p><strong>מספר שובר:</strong> ${voucherNumber}</p>
-                <p><strong>סכום:</strong> ₪${amount}</p>
-                <p><strong>תוקף:</strong> שנה מיום הרכישה</p>
+                <p><strong>${isProductVoucher ? 'מוצר' : 'סכום'}:</strong> ${displayAmount}</p>
+                <p><strong>תוקף עד:</strong> ${expiryText}</p>
             </div>
             ${attachments.length > 0 ? '<div class="voucher-image"><img src="cid:voucher" alt="שובר מתנה"></div>' : ''}
             <p>השובר מצורף גם כקובץ תמונה להורדה.</p>
+            ${greeting ? `<p><em>"${greeting.replace(/\n/g, '<br>')}"</em></p>` : ''}
             <p>בברכה,<br>צוות שפת המדבר</p>
         </div>
         <div class="footer">

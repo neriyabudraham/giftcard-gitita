@@ -36,14 +36,17 @@ router.post('/', async (req, res) => {
             exists = await db.query('SELECT 1 FROM purchases WHERE voucher_number = $1', [voucherNumber]);
         }
 
+        // Check if this is a product voucher (non-numeric price like "קפה מאפה זוגי")
+        const productName = voucherType && !voucherType.includes('₪') && isNaN(parseFloat(voucherType)) ? voucherType : null;
+
         // Save purchase
         const result = await db.query(
             `INSERT INTO purchases 
-             (voucher_number, amount, buyer_first_name, buyer_last_name, buyer_phone, buyer_email,
+             (voucher_number, amount, product_name, buyer_first_name, buyer_last_name, buyer_phone, buyer_email,
               recipient_first_name, recipient_last_name, recipient_phone, greeting, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
              RETURNING id`,
-            [voucherNumber, amount, buyerFirstName, buyerLastName, buyerPhone, buyerEmail,
+            [voucherNumber, amount, productName, buyerFirstName, buyerLastName, buyerPhone, buyerEmail,
              recipientFirstName, recipientLastName, recipientPhone, greeting]
         );
 
@@ -285,8 +288,8 @@ router.post('/webhook', async (req, res) => {
         const voucherResult = await db.query(
             `INSERT INTO vouchers 
              (voucher_number, original_amount, remaining_amount, customer_name, phone_number, email,
-              expiry_date, greeting, buyer_name, buyer_phone, buyer_email, recipient_name, recipient_phone, status)
-             VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
+              expiry_date, greeting, buyer_name, buyer_phone, buyer_email, recipient_name, recipient_phone, product_name, status)
+             VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active')
              RETURNING *`,
             [
                 purchase.voucher_number,
@@ -300,7 +303,8 @@ router.post('/webhook', async (req, res) => {
                 purchase.buyer_phone,
                 purchase.buyer_email,
                 `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
-                purchase.recipient_phone
+                purchase.recipient_phone,
+                purchase.product_name // Will be null for monetary vouchers
             ]
         );
 
@@ -313,10 +317,13 @@ router.post('/webhook', async (req, res) => {
         );
 
         // Generate voucher image
+        // Use product_name if available (for product vouchers), otherwise use amount
+        const voucherDisplayAmount = purchase.product_name || purchase.amount;
+        
         try {
             await voucherService.generateVoucherImage({
                 voucherId: purchase.voucher_number,
-                amount: purchase.amount,
+                amount: voucherDisplayAmount,
                 greeting: purchase.greeting,
                 recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
                 expiryDate: expiryDate.toLocaleDateString('he-IL')
@@ -336,8 +343,11 @@ router.post('/webhook', async (req, res) => {
                 to: purchase.buyer_email,
                 buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
                 voucherNumber: purchase.voucher_number,
-                amount: purchase.amount,
-                voucherId: purchase.voucher_number
+                amount: voucherDisplayAmount, // Use product name if available
+                voucherId: purchase.voucher_number,
+                recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                greeting: purchase.greeting,
+                expiryDate: expiryDate
             });
             console.log('Email sent to:', purchase.buyer_email);
         } catch (emailError) {

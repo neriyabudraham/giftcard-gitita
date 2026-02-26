@@ -356,37 +356,58 @@
 
     <!-- Create Voucher Modal -->
     <div class="modal" id="createModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width:600px">
             <div class="modal-header">
                 <h3>יצירת שובר חדש</h3>
                 <button class="modal-close" onclick="closeModal('createModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="createForm">
-                    <div class="form-group">
-                        <label>מספר שובר (13 ספרות)</label>
-                        <input type="text" id="createNumber" pattern="\d{13}" required placeholder="יווצר אוטומטית">
-                        <button type="button" class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="generateVoucherNumber()">צור מספר</button>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+                        <div class="form-group">
+                            <label>מספר שובר (13 ספרות)</label>
+                            <input type="text" id="createNumber" pattern="\d{13}" required placeholder="יווצר אוטומטית">
+                            <button type="button" class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="generateVoucherNumber()">צור מספר</button>
+                        </div>
+                        <div class="form-group">
+                            <label>סוג שובר</label>
+                            <select id="createVoucherType" onchange="toggleProductName()">
+                                <option value="monetary">שובר כספי (סכום)</option>
+                                <option value="product">שובר מוצר</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="amountGroup">
+                            <label>סכום</label>
+                            <input type="number" id="createAmount" min="1" required>
+                        </div>
+                        <div class="form-group" id="productNameGroup" style="display:none">
+                            <label>שם המוצר</label>
+                            <input type="text" id="createProductName" placeholder="לדוגמה: קפה מאפה זוגי + עציץ">
+                        </div>
+                        <div class="form-group">
+                            <label>שם מקבל השובר</label>
+                            <input type="text" id="createCustomerName">
+                        </div>
+                        <div class="form-group">
+                            <label>טלפון</label>
+                            <input type="tel" id="createPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>אימייל מקבל (לשליחה)</label>
+                            <input type="email" id="createRecipientEmail" placeholder="אופציונלי - לשליחת השובר">
+                        </div>
+                        <div class="form-group">
+                            <label>תאריך תפוגה</label>
+                            <input type="date" id="createExpiry">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>סכום</label>
-                        <input type="number" id="createAmount" min="1" required>
+                        <label>ברכה על השובר</label>
+                        <textarea id="createGreeting" placeholder="ברכה אישית שתופיע על השובר..." style="min-height:80px"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label>שם לקוח</label>
-                        <input type="text" id="createCustomerName">
-                    </div>
-                    <div class="form-group">
-                        <label>טלפון</label>
-                        <input type="tel" id="createPhone">
-                    </div>
-                    <div class="form-group">
-                        <label>אימייל</label>
-                        <input type="email" id="createEmail">
-                    </div>
-                    <div class="form-group">
-                        <label>תאריך תפוגה</label>
-                        <input type="date" id="createExpiry">
+                    <div class="form-group" style="display:flex;align-items:center;gap:10px">
+                        <input type="checkbox" id="createSendEmail" checked>
+                        <label for="createSendEmail" style="margin:0;cursor:pointer">שלח שובר במייל למקבל</label>
                     </div>
                     <button type="submit" class="btn btn-primary" style="width:100%">יצירת שובר</button>
                 </form>
@@ -552,16 +573,48 @@
             document.getElementById('useModal').classList.add('show');
         }
 
+        function toggleProductName() {
+            const type = document.getElementById('createVoucherType').value;
+            const amountGroup = document.getElementById('amountGroup');
+            const productNameGroup = document.getElementById('productNameGroup');
+            
+            if (type === 'product') {
+                amountGroup.style.display = 'none';
+                productNameGroup.style.display = 'block';
+                document.getElementById('createAmount').required = false;
+                document.getElementById('createProductName').required = true;
+            } else {
+                amountGroup.style.display = 'block';
+                productNameGroup.style.display = 'none';
+                document.getElementById('createAmount').required = true;
+                document.getElementById('createProductName').required = false;
+            }
+        }
+
         function openCreateModal() {
             document.getElementById('createForm').reset();
             generateVoucherNumber();
+            toggleProductName();
             
             // Set default expiry date to 1 year from now
             const expiryDate = new Date();
             expiryDate.setFullYear(expiryDate.getFullYear() + 1);
             document.getElementById('createExpiry').value = expiryDate.toISOString().split('T')[0];
             
+            // Load default greeting
+            loadDefaultGreeting();
+            
             document.getElementById('createModal').classList.add('show');
+        }
+        
+        async function loadDefaultGreeting() {
+            try {
+                const res = await fetch(`${API}/settings/public`);
+                const settings = await res.json();
+                if (settings.default_greeting) {
+                    document.getElementById('createGreeting').value = settings.default_greeting;
+                }
+            } catch (e) {}
         }
 
         async function viewVoucher(id) {
@@ -653,13 +706,19 @@
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const voucherType = document.getElementById('createVoucherType').value;
+            const isProductVoucher = voucherType === 'product';
+            
             const voucher = {
                 voucher_number: document.getElementById('createNumber').value,
-                original_amount: parseFloat(document.getElementById('createAmount').value),
+                original_amount: isProductVoucher ? 0 : parseFloat(document.getElementById('createAmount').value),
                 customer_name: document.getElementById('createCustomerName').value,
                 phone_number: document.getElementById('createPhone').value,
-                email: document.getElementById('createEmail').value,
-                expiry_date: document.getElementById('createExpiry').value
+                email: document.getElementById('createRecipientEmail').value,
+                expiry_date: document.getElementById('createExpiry').value,
+                greeting: document.getElementById('createGreeting').value,
+                product_name: isProductVoucher ? document.getElementById('createProductName').value : null,
+                send_email: document.getElementById('createSendEmail').checked
             };
             
             try {
@@ -674,7 +733,11 @@
                 
                 if (!res.ok) throw new Error(data.message);
                 
-                alert('שובר נוצר בהצלחה!');
+                let msg = 'שובר נוצר בהצלחה!';
+                if (voucher.send_email && voucher.email) {
+                    msg += '\nהשובר נשלח למייל: ' + voucher.email;
+                }
+                alert(msg);
                 closeModal('createModal');
                 loadVouchers();
                 loadStats();

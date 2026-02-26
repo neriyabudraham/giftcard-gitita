@@ -275,6 +275,118 @@
             background: rgba(255,255,255,0.2);
         }
         
+        /* Redemption Section */
+        .redemption-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .redemption-toggle {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        .redemption-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+        .redemption-form {
+            display: none;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        .redemption-form.show { display: block; }
+        .redemption-form h4 {
+            color: #fbbf24;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 8px;
+            text-align: right;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #fbbf24;
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .quick-amounts {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .quick-amount {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .quick-amount:hover {
+            background: rgba(251, 191, 36, 0.3);
+        }
+        .btn-redeem {
+            background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        .btn-redeem:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4);
+        }
+        .btn-redeem:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .redemption-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            color: #22c55e;
+        }
+        
         /* Footer */
         footer {
             position: fixed;
@@ -365,7 +477,36 @@
                             <span class="value" id="expiryDate"></span>
                         </div>
                     </div>
-                    <button class="btn-back" onclick="backToSearch()">חיפוש שובר נוסף</button>
+                    
+                    <!-- Redemption Section (only for active vouchers) -->
+                    <div class="redemption-section" id="redemptionSection" style="display:none">
+                        <button class="redemption-toggle" onclick="toggleRedemption()">💳 מימוש שובר</button>
+                        
+                        <div class="redemption-form" id="redemptionForm">
+                            <h4>מימוש שובר</h4>
+                            <div class="form-group">
+                                <label>קוד צוות (4 ספרות)</label>
+                                <input type="password" id="staffPin" maxlength="4" pattern="\d{4}" placeholder="הזן קוד צוות">
+                            </div>
+                            <div class="form-group">
+                                <label>סכום למימוש</label>
+                                <input type="number" id="redeemAmount" min="1" placeholder="הזן סכום">
+                                <div class="quick-amounts" id="quickAmounts"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>הערות (אופציונלי)</label>
+                                <textarea id="redeemNotes" placeholder="הערות על המימוש..."></textarea>
+                            </div>
+                            <button class="btn-redeem" onclick="redeemVoucher()">אישור מימוש</button>
+                        </div>
+                        
+                        <div class="redemption-success" id="redemptionSuccess" style="display:none">
+                            <h4>✅ המימוש בוצע בהצלחה!</h4>
+                            <p id="successMessage"></p>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-back" style="margin-top:20px" onclick="backToSearch()">חיפוש שובר נוסף</button>
                 </div>
             </div>
 
@@ -439,7 +580,10 @@
             }
         });
 
+        let currentVoucher = null;
+
         function showVoucher(voucher) {
+            currentVoucher = voucher;
             document.getElementById('headerSection').style.display = 'none';
             document.getElementById('searchCard').style.display = 'none';
             document.getElementById('notFoundCard').classList.remove('show');
@@ -447,23 +591,128 @@
             
             const isExpired = voucher.expiry_date && new Date(voucher.expiry_date) < new Date();
             const statusEl = document.getElementById('voucherStatus');
+            const remaining = parseFloat(voucher.remaining_amount);
             
-            if (voucher.status === 'used' || voucher.remaining_amount <= 0) {
+            if (voucher.status === 'used' || remaining <= 0) {
                 statusEl.textContent = 'נוצל במלואו';
                 statusEl.className = 'voucher-status status-used';
+                document.getElementById('redemptionSection').style.display = 'none';
             } else if (isExpired) {
                 statusEl.textContent = 'פג תוקף';
                 statusEl.className = 'voucher-status status-expired';
+                document.getElementById('redemptionSection').style.display = 'none';
             } else {
                 statusEl.textContent = 'פעיל';
                 statusEl.className = 'voucher-status status-active';
+                document.getElementById('redemptionSection').style.display = 'block';
+                
+                // Setup quick amounts
+                const quickAmounts = document.getElementById('quickAmounts');
+                const amounts = [remaining];
+                if (remaining > 50) amounts.unshift(50);
+                if (remaining > 100) amounts.unshift(100);
+                quickAmounts.innerHTML = amounts.map(a => 
+                    `<button type="button" class="quick-amount" onclick="setRedeemAmount(${a})">₪${a}</button>`
+                ).join('');
+                
+                document.getElementById('redeemAmount').max = remaining;
             }
             
-            document.getElementById('voucherAmount').textContent = `₪${parseFloat(voucher.remaining_amount).toLocaleString()}`;
+            const formatAmount = (amt) => {
+                const num = parseFloat(amt);
+                return Number.isInteger(num) ? num : num.toLocaleString();
+            };
+            
+            document.getElementById('voucherAmount').textContent = `₪${formatAmount(voucher.remaining_amount)}`;
             document.getElementById('voucherNum').textContent = voucher.voucher_number;
-            document.getElementById('originalAmount').textContent = `₪${parseFloat(voucher.original_amount).toLocaleString()}`;
-            document.getElementById('remainingAmount').textContent = `₪${parseFloat(voucher.remaining_amount).toLocaleString()}`;
+            document.getElementById('originalAmount').textContent = `₪${formatAmount(voucher.original_amount)}`;
+            document.getElementById('remainingAmount').textContent = `₪${formatAmount(voucher.remaining_amount)}`;
             document.getElementById('expiryDate').textContent = voucher.expiry_date ? new Date(voucher.expiry_date).toLocaleDateString('he-IL') : 'ללא הגבלה';
+            
+            // Reset redemption form
+            document.getElementById('redemptionForm').classList.remove('show');
+            document.getElementById('redemptionSuccess').style.display = 'none';
+            document.getElementById('staffPin').value = '';
+            document.getElementById('redeemAmount').value = '';
+            document.getElementById('redeemNotes').value = '';
+        }
+        
+        function toggleRedemption() {
+            document.getElementById('redemptionForm').classList.toggle('show');
+        }
+        
+        function setRedeemAmount(amount) {
+            document.getElementById('redeemAmount').value = amount;
+        }
+        
+        async function redeemVoucher() {
+            const pin = document.getElementById('staffPin').value;
+            const amount = parseFloat(document.getElementById('redeemAmount').value);
+            const notes = document.getElementById('redeemNotes').value;
+            
+            if (!pin || pin.length !== 4) {
+                alert('נא להזין קוד צוות (4 ספרות)');
+                return;
+            }
+            
+            if (!amount || amount <= 0) {
+                alert('נא להזין סכום למימוש');
+                return;
+            }
+            
+            if (amount > parseFloat(currentVoucher.remaining_amount)) {
+                alert('הסכום גדול מהיתרה הקיימת');
+                return;
+            }
+            
+            const btn = document.querySelector('.btn-redeem');
+            btn.disabled = true;
+            btn.textContent = 'מעבד...';
+            
+            try {
+                const res = await fetch(`${API}/vouchers/public-redeem`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        voucher_number: currentVoucher.voucher_number,
+                        amount,
+                        notes,
+                        staff_pin: pin
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.message || 'שגיאה במימוש');
+                }
+                
+                // Success
+                document.getElementById('redemptionForm').classList.remove('show');
+                document.getElementById('redemptionSuccess').style.display = 'block';
+                document.getElementById('successMessage').textContent = 
+                    `סכום: ₪${amount} | יתרה חדשה: ₪${data.remaining_amount}`;
+                
+                // Update displayed values
+                const formatAmount = (amt) => {
+                    const num = parseFloat(amt);
+                    return Number.isInteger(num) ? num : num.toLocaleString();
+                };
+                document.getElementById('voucherAmount').textContent = `₪${formatAmount(data.remaining_amount)}`;
+                document.getElementById('remainingAmount').textContent = `₪${formatAmount(data.remaining_amount)}`;
+                
+                if (data.remaining_amount <= 0) {
+                    document.getElementById('voucherStatus').textContent = 'נוצל במלואו';
+                    document.getElementById('voucherStatus').className = 'voucher-status status-used';
+                    document.getElementById('redemptionSection').style.display = 'none';
+                }
+                
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'אישור מימוש';
+            }
         }
 
         function showNotFound(number) {

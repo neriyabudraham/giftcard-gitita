@@ -138,6 +138,81 @@ router.get('/check', rateLimitMiddleware, async (req, res) => {
     }
 });
 
+// Public voucher redemption (with staff PIN)
+const STAFF_PIN = process.env.STAFF_PIN || '1234';
+
+router.post('/public-redeem', rateLimitMiddleware, async (req, res) => {
+    try {
+        const { voucher_number, amount, notes, staff_pin } = req.body;
+
+        // Verify staff PIN
+        if (!staff_pin || staff_pin !== STAFF_PIN) {
+            return res.status(403).json({ error: true, message: 'קוד צוות שגוי' });
+        }
+
+        if (!voucher_number || !amount) {
+            return res.status(400).json({ error: true, message: 'נדרש מספר שובר וסכום' });
+        }
+
+        // Get voucher
+        const voucherResult = await db.query(
+            'SELECT * FROM vouchers WHERE voucher_number = $1',
+            [voucher_number]
+        );
+
+        if (voucherResult.rows.length === 0) {
+            return res.status(404).json({ error: true, message: 'שובר לא נמצא' });
+        }
+
+        const voucher = voucherResult.rows[0];
+        const isExpired = voucher.expiry_date && new Date(voucher.expiry_date) < new Date();
+
+        if (voucher.status !== 'active') {
+            return res.status(400).json({ error: true, message: 'השובר אינו פעיל' });
+        }
+
+        if (isExpired) {
+            return res.status(400).json({ error: true, message: 'השובר פג תוקף' });
+        }
+
+        if (parseFloat(voucher.remaining_amount) < parseFloat(amount)) {
+            return res.status(400).json({ error: true, message: 'הסכום גדול מהיתרה הקיימת' });
+        }
+
+        const newRemaining = parseFloat(voucher.remaining_amount) - parseFloat(amount);
+        const newStatus = newRemaining <= 0 ? 'used' : 'active';
+
+        // Update voucher
+        await db.query(
+            `UPDATE vouchers SET 
+             remaining_amount = $1, 
+             status = $2,
+             updated_at = NOW()
+             WHERE id = $3`,
+            [newRemaining, newStatus, voucher.id]
+        );
+
+        // Record usage history
+        await db.query(
+            `INSERT INTO voucher_usage (voucher_id, amount_used, remaining_after, notes)
+             VALUES ($1, $2, $3, $4)`,
+            [voucher.id, amount, newRemaining, notes || 'מימוש ציבורי']
+        );
+
+        console.log(`Public voucher redemption: ${voucher_number}, amount: ${amount}, remaining: ${newRemaining}`);
+
+        res.json({
+            success: true,
+            remaining_amount: newRemaining,
+            status: newStatus
+        });
+
+    } catch (error) {
+        console.error('Public redeem error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה במימוש שובר' });
+    }
+});
+
 // Get all vouchers (admin)
 router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -245,11 +320,18 @@ router.post('/', authMiddleware, async (req, res) => {
             buyer_phone,
             buyer_email,
             recipient_name,
-            recipient_phone
+            recipient_phone,
+            product_name,
+            send_email
         } = req.body;
 
-        if (!voucher_number || !original_amount) {
-            return res.status(400).json({ error: true, message: 'מספר שובר וסכום נדרשים' });
+        // For product vouchers, we might have product_name but no amount
+        if (!voucher_number) {
+            return res.status(400).json({ error: true, message: 'מספר שובר נדרש' });
+        }
+        
+        if (!original_amount && !product_name) {
+            return res.status(400).json({ error: true, message: 'סכום או שם מוצר נדרשים' });
         }
 
         // Check if voucher number exists
@@ -266,15 +348,58 @@ router.post('/', authMiddleware, async (req, res) => {
             `INSERT INTO vouchers 
              (voucher_number, original_amount, remaining_amount, customer_name, phone_number, email, 
               expiry_date, voucher_image_url, greeting, buyer_name, buyer_phone, buyer_email, 
-              recipient_name, recipient_phone, status)
-             VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active')
+              recipient_name, recipient_phone, product_name, status)
+             VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'active')
              RETURNING *`,
-            [voucher_number, original_amount, customer_name, phone_number, email,
+            [voucher_number, original_amount || 0, customer_name, phone_number, email,
              expiry_date, voucher_image_url, greeting, buyer_name, buyer_phone, buyer_email,
-             recipient_name, recipient_phone]
+             recipient_name, recipient_phone, product_name]
         );
 
-        res.json({ success: true, voucher: result.rows[0] });
+        const voucher = result.rows[0];
+
+        // Generate voucher image and send email if requested
+        if (send_email && email) {
+            try {
+                const voucherService = require('../services/voucher.service');
+                const emailService = require('../services/email.service');
+                
+                // Generate image
+                const imageBuffer = await voucherService.generateVoucherImage({
+                    voucherNumber: voucher_number,
+                    amount: product_name || original_amount,
+                    greeting: greeting || '',
+                    recipientName: customer_name || recipient_name || '',
+                    expiryDate: expiry_date ? new Date(expiry_date).toLocaleDateString('he-IL') : ''
+                });
+                
+                // Save image
+                await voucherService.saveVoucherImage(voucher_number, imageBuffer);
+                
+                // Update voucher with image URL
+                await db.query(
+                    'UPDATE vouchers SET voucher_image_url = $1 WHERE id = $2',
+                    [`/api/voucher/${voucher_number}/image`, voucher.id]
+                );
+                
+                // Send email
+                await emailService.sendVoucherEmail({
+                    to: email,
+                    voucherNumber: voucher_number,
+                    amount: product_name || `₪${original_amount}`,
+                    recipientName: customer_name || recipient_name || '',
+                    greeting: greeting || '',
+                    expiryDate: expiry_date,
+                    imageBuffer
+                });
+                
+                console.log('Voucher email sent to:', email);
+            } catch (emailError) {
+                console.error('Error sending voucher email:', emailError);
+            }
+        }
+
+        res.json({ success: true, voucher });
 
     } catch (error) {
         console.error('Create voucher error:', error);

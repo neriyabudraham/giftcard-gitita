@@ -18,10 +18,11 @@ const VOUCHERS_DIR = path.join(__dirname, '../../vouchers');
 router.get('/:voucherNumber/generate', async (req, res, next) => {
     try {
         const { voucherNumber } = req.params;
+        const forceRegenerate = req.query.force === 'true';
         
         // Get voucher data from database
         const result = await db.query(
-            `SELECT v.*, p.greeting, p.recipient_first_name, p.recipient_last_name
+            `SELECT v.*, p.greeting as purchase_greeting, p.recipient_first_name, p.recipient_last_name, p.product_name as purchase_product_name
              FROM vouchers v
              LEFT JOIN purchases p ON p.voucher_number = v.voucher_number
              WHERE v.voucher_number = $1`,
@@ -42,21 +43,24 @@ router.get('/:voucherNumber/generate', async (req, res, next) => {
             imageExists = true;
         } catch {}
         
-        // Generate if doesn't exist
-        if (!imageExists) {
+        // Generate if doesn't exist or force regenerate
+        if (!imageExists || forceRegenerate) {
             const expiryDate = voucher.expiry_date 
                 ? new Date(voucher.expiry_date).toLocaleDateString('he-IL')
                 : new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString('he-IL');
             
             const recipientName = voucher.recipient_first_name 
                 ? `${voucher.recipient_first_name} ${voucher.recipient_last_name || ''}`
-                : voucher.customer_name || '';
+                : voucher.customer_name || voucher.recipient_name || '';
+            
+            // Use product_name if available (for product vouchers), otherwise use amount
+            const displayAmount = voucher.product_name || voucher.purchase_product_name || voucher.original_amount || voucher.remaining_amount;
             
             const imageBuffer = await voucherService.generateVoucherImage({
                 voucherNumber,
-                amount: voucher.original_amount || voucher.remaining_amount,
+                amount: displayAmount,
                 recipientName,
-                greeting: voucher.greeting || `מתנה מיוחדת עבור ${recipientName}`,
+                greeting: voucher.greeting || voucher.purchase_greeting || `מתנה מיוחדת עבור ${recipientName}`,
                 expiryDate
             });
             

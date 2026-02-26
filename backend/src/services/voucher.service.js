@@ -7,9 +7,17 @@ const VOUCHERS_DIR = path.join(__dirname, '../../vouchers');
 function generateVoucherHTML(data) {
     const { voucherNumber, amount, recipientName, greeting, expiryDate } = data;
     
-    // Format amount - remove .00 if whole number
+    // Check if amount is a product name (string) or numeric value
     const numAmount = parseFloat(amount);
-    const formattedAmount = Number.isInteger(numAmount) ? numAmount.toString() : numAmount.toLocaleString('he-IL');
+    const isProductVoucher = isNaN(numAmount) || numAmount === 0;
+    
+    // Format amount - for monetary show ₪X, for product show product name
+    let formattedAmount;
+    if (isProductVoucher) {
+        formattedAmount = amount; // Product name
+    } else {
+        formattedAmount = Number.isInteger(numAmount) ? numAmount.toString() : numAmount.toLocaleString('he-IL');
+    }
     
     const formattedGreeting = greeting 
         ? greeting.replace(/\n/g, '<br>') 
@@ -269,7 +277,7 @@ function generateVoucherHTML(data) {
             <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
                 <div class="logo"></div>
                 <div class="voucher-title">שובר מתנה</div>
-                <div class="voucher-amount">₪${formattedAmount}</div>
+                <div class="voucher-amount">${isProductVoucher ? formattedAmount : '₪' + formattedAmount}</div>
                 <div class="voucher-subtitle">שפת המדבר<br>חוויה של יופי וטבע</div>
             </div>
         </div>
