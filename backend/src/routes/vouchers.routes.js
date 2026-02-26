@@ -322,7 +322,10 @@ router.post('/', authMiddleware, async (req, res) => {
             recipient_name,
             recipient_phone,
             product_name,
-            send_email
+            send_email,
+            send_to_admin,
+            send_to_buyer,
+            send_to_recipient
         } = req.body;
 
         // For product vouchers, we might have product_name but no amount
@@ -357,19 +360,24 @@ router.post('/', authMiddleware, async (req, res) => {
         );
 
         const voucher = result.rows[0];
-
-        // Generate voucher image and send email if requested
-        if (send_email && email) {
+        const voucherService = require('../services/voucher.service');
+        const emailService = require('../services/email.service');
+        
+        // Determine if we need to generate voucher image (if any email is being sent)
+        const shouldSendToRecipient = (send_to_recipient || send_email) && email;
+        const shouldSendToBuyer = send_to_buyer && buyer_email;
+        const shouldSendToAdmin = send_to_admin !== false; // default true
+        
+        let imageBuffer = null;
+        
+        if (shouldSendToRecipient || shouldSendToBuyer || shouldSendToAdmin) {
             try {
-                const voucherService = require('../services/voucher.service');
-                const emailService = require('../services/email.service');
-                
-                // Generate image
-                const imageBuffer = await voucherService.generateVoucherImage({
+                // Generate voucher image
+                imageBuffer = await voucherService.generateVoucherImage({
                     voucherNumber: voucher_number,
                     amount: product_name || original_amount,
                     greeting: greeting || '',
-                    recipientName: customer_name || recipient_name || '',
+                    recipientName: recipient_name || customer_name || '',
                     expiryDate: expiry_date ? new Date(expiry_date).toLocaleDateString('he-IL') : ''
                 });
                 
@@ -381,43 +389,74 @@ router.post('/', authMiddleware, async (req, res) => {
                     'UPDATE vouchers SET voucher_image_url = $1 WHERE id = $2',
                     [`/api/voucher/${voucher_number}/image`, voucher.id]
                 );
-                
-                // Send email
+            } catch (imgError) {
+                console.error('Error generating voucher image:', imgError);
+            }
+        }
+        
+        const displayAmount = product_name || `₪${original_amount}`;
+        const displayRecipient = recipient_name || customer_name || '';
+        
+        // Send email to recipient
+        if (shouldSendToRecipient) {
+            try {
                 await emailService.sendVoucherEmail({
                     to: email,
                     voucherNumber: voucher_number,
-                    amount: product_name || `₪${original_amount}`,
-                    recipientName: customer_name || recipient_name || '',
+                    amount: displayAmount,
+                    recipientName: displayRecipient,
+                    buyerName: buyer_name || '',
                     greeting: greeting || '',
                     expiryDate: expiry_date,
                     imageBuffer
                 });
-                
-                console.log('Voucher email sent to:', email);
+                console.log('Voucher email sent to recipient:', email);
             } catch (emailError) {
-                console.error('Error sending voucher email:', emailError);
+                console.error('Error sending email to recipient:', emailError);
+            }
+        }
+        
+        // Send email to buyer (different from recipient)
+        if (shouldSendToBuyer && buyer_email !== email) {
+            try {
+                await emailService.sendVoucherEmail({
+                    to: buyer_email,
+                    voucherNumber: voucher_number,
+                    amount: displayAmount,
+                    recipientName: displayRecipient,
+                    buyerName: buyer_name || '',
+                    greeting: greeting || '',
+                    expiryDate: expiry_date,
+                    imageBuffer,
+                    isBuyerCopy: true
+                });
+                console.log('Voucher email sent to buyer:', buyer_email);
+            } catch (emailError) {
+                console.error('Error sending email to buyer:', emailError);
             }
         }
 
         // Send admin notification
-        try {
-            const adminEmailSetting = await db.query(
-                "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
-            );
-            if (adminEmailSetting.rows.length > 0) {
-                const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
-                await emailService.sendAdminNotificationEmail({
-                    adminEmail,
-                    voucherNumber: voucher_number,
-                    amount: product_name || `₪${original_amount}`,
-                    buyerName: customer_name || 'נוצר דרך ממשק הניהול',
-                    buyerEmail: email,
-                    buyerPhone: phone_number,
-                    recipientName: recipient_name
-                });
+        if (shouldSendToAdmin) {
+            try {
+                const adminEmailSetting = await db.query(
+                    "SELECT setting_value FROM site_settings WHERE setting_key = 'admin_notification_email'"
+                );
+                if (adminEmailSetting.rows.length > 0) {
+                    const adminEmail = JSON.parse(adminEmailSetting.rows[0].setting_value);
+                    await emailService.sendAdminNotificationEmail({
+                        adminEmail,
+                        voucherNumber: voucher_number,
+                        amount: displayAmount,
+                        buyerName: buyer_name || customer_name || 'נוצר דרך ממשק הניהול',
+                        buyerEmail: buyer_email || email,
+                        buyerPhone: buyer_phone || phone_number,
+                        recipientName: recipient_name
+                    });
+                }
+            } catch (adminEmailError) {
+                console.error('Error sending admin notification:', adminEmailError);
             }
-        } catch (adminEmailError) {
-            console.error('Error sending admin notification:', adminEmailError);
         }
 
         res.json({ success: true, voucher });

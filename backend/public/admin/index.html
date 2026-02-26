@@ -357,20 +357,23 @@
 
     <!-- Create Voucher Modal -->
     <div class="modal" id="createModal">
-        <div class="modal-content" style="max-width:600px">
+        <div class="modal-content" style="max-width:700px">
             <div class="modal-header">
                 <h3>יצירת שובר חדש</h3>
                 <button class="modal-close" onclick="closeModal('createModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="createForm">
-                    <div class="form-group" style="margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #0f3460">
-                        <label style="font-weight:600;color:#fbbf24">בחירת מוצר מהקטלוג</label>
+                    <!-- Product Selection -->
+                    <div class="form-group" style="margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,0.1)">
+                        <label style="font-weight:600;color:#FFD700">בחירת מוצר מהקטלוג</label>
                         <select id="createProductSelect" onchange="selectProduct()" style="width:100%;padding:12px;margin-top:8px">
                             <option value="">-- בחר מוצר או הזן ידנית --</option>
                         </select>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+                    
+                    <!-- Voucher Details -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px">
                         <div class="form-group">
                             <label>מספר שובר (13 ספרות)</label>
                             <input type="text" id="createNumber" pattern="\d{13}" required placeholder="יווצר אוטומטית">
@@ -392,30 +395,75 @@
                             <input type="text" id="createProductName" placeholder="לדוגמה: קפה מאפה זוגי + עציץ">
                         </div>
                         <div class="form-group">
-                            <label>שם מקבל השובר</label>
-                            <input type="text" id="createCustomerName">
-                        </div>
-                        <div class="form-group">
-                            <label>טלפון</label>
-                            <input type="tel" id="createPhone">
-                        </div>
-                        <div class="form-group">
-                            <label>אימייל מקבל (לשליחה)</label>
-                            <input type="email" id="createRecipientEmail" placeholder="אופציונלי - לשליחת השובר">
-                        </div>
-                        <div class="form-group">
                             <label>תאריך תפוגה</label>
                             <input type="date" id="createExpiry">
                         </div>
                     </div>
+                    
+                    <!-- Buyer Details -->
+                    <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:15px;margin-bottom:15px">
+                        <h4 style="color:#FFD700;margin-bottom:12px;font-size:1rem">פרטי הרוכש (אופציונלי)</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:0.85rem">שם</label>
+                                <input type="text" id="createBuyerName" placeholder="שם הרוכש">
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:0.85rem">טלפון</label>
+                                <input type="tel" id="createBuyerPhone" placeholder="טלפון">
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:0.85rem">אימייל</label>
+                                <input type="email" id="createBuyerEmail" placeholder="מייל הרוכש">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recipient Details -->
+                    <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:15px;margin-bottom:15px">
+                        <h4 style="color:#22c55e;margin-bottom:12px;font-size:1rem">פרטי מקבל השובר (אופציונלי)</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:0.85rem">שם</label>
+                                <input type="text" id="createRecipientName" placeholder="שם המקבל">
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:0.85rem">טלפון</label>
+                                <input type="tel" id="createRecipientPhone" placeholder="טלפון">
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:0.85rem">אימייל</label>
+                                <input type="email" id="createRecipientEmail" placeholder="מייל המקבל">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Greeting -->
                     <div class="form-group">
                         <label>ברכה על השובר</label>
-                        <textarea id="createGreeting" placeholder="ברכה אישית שתופיע על השובר..." style="min-height:80px"></textarea>
+                        <textarea id="createGreeting" placeholder="ברכה אישית שתופיע על השובר..." style="min-height:100px"></textarea>
                     </div>
-                    <div class="form-group" style="display:flex;align-items:center;gap:10px">
-                        <input type="checkbox" id="createSendEmail" checked>
-                        <label for="createSendEmail" style="margin:0;cursor:pointer">שלח שובר במייל למקבל</label>
+                    
+                    <!-- Email Options -->
+                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:15px;margin-bottom:15px">
+                        <h4 style="color:#ccc;margin-bottom:12px;font-size:1rem">אפשרויות שליחת מייל</h4>
+                        <div style="display:flex;flex-wrap:wrap;gap:20px">
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="checkbox" id="createSendToAdmin" checked>
+                                <label for="createSendToAdmin" style="margin:0;cursor:pointer;font-size:0.9rem">שלח למנהל</label>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="checkbox" id="createSendToBuyer" checked>
+                                <label for="createSendToBuyer" style="margin:0;cursor:pointer;font-size:0.9rem">שלח לרוכש</label>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="checkbox" id="createSendToRecipient" checked>
+                                <label for="createSendToRecipient" style="margin:0;cursor:pointer;font-size:0.9rem">שלח למקבל</label>
+                            </div>
+                        </div>
+                        <p style="color:#888;font-size:0.8rem;margin-top:8px">* מיילים יישלחו רק אם יש כתובת מייל תקינה</p>
                     </div>
+                    
                     <button type="submit" class="btn btn-primary" style="width:100%">יצירת שובר</button>
                 </form>
             </div>
@@ -762,16 +810,30 @@
             const voucherType = document.getElementById('createVoucherType').value;
             const isProductVoucher = voucherType === 'product';
             
+            const buyerEmail = document.getElementById('createBuyerEmail').value;
+            const recipientEmail = document.getElementById('createRecipientEmail').value;
+            
             const voucher = {
                 voucher_number: document.getElementById('createNumber').value,
                 original_amount: isProductVoucher ? 0 : parseFloat(document.getElementById('createAmount').value),
-                customer_name: document.getElementById('createCustomerName').value,
-                phone_number: document.getElementById('createPhone').value,
-                email: document.getElementById('createRecipientEmail').value,
                 expiry_date: document.getElementById('createExpiry').value,
                 greeting: document.getElementById('createGreeting').value,
                 product_name: isProductVoucher ? document.getElementById('createProductName').value : null,
-                send_email: document.getElementById('createSendEmail').checked
+                // Buyer details
+                buyer_name: document.getElementById('createBuyerName').value,
+                buyer_phone: document.getElementById('createBuyerPhone').value,
+                buyer_email: buyerEmail,
+                // Recipient details
+                recipient_name: document.getElementById('createRecipientName').value,
+                recipient_phone: document.getElementById('createRecipientPhone').value,
+                email: recipientEmail,
+                // For backward compatibility
+                customer_name: document.getElementById('createRecipientName').value || document.getElementById('createBuyerName').value,
+                phone_number: document.getElementById('createRecipientPhone').value || document.getElementById('createBuyerPhone').value,
+                // Email options
+                send_to_admin: document.getElementById('createSendToAdmin').checked,
+                send_to_buyer: document.getElementById('createSendToBuyer').checked,
+                send_to_recipient: document.getElementById('createSendToRecipient').checked
             };
             
             try {
@@ -787,8 +849,12 @@
                 if (!res.ok) throw new Error(data.message);
                 
                 let msg = 'שובר נוצר בהצלחה!';
-                if (voucher.send_email && voucher.email) {
-                    msg += '\nהשובר נשלח למייל: ' + voucher.email;
+                const sentTo = [];
+                if (voucher.send_to_admin) sentTo.push('מנהל');
+                if (voucher.send_to_buyer && buyerEmail) sentTo.push('רוכש (' + buyerEmail + ')');
+                if (voucher.send_to_recipient && recipientEmail) sentTo.push('מקבל (' + recipientEmail + ')');
+                if (sentTo.length > 0) {
+                    msg += '\nנשלח ל: ' + sentTo.join(', ');
                 }
                 alert(msg);
                 closeModal('createModal');

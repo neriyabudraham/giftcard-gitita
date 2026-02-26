@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVoucherEmail(data) {
-    const { to, buyerName, voucherNumber, amount, voucherId, recipientName, greeting, expiryDate, imageBuffer } = data;
+    const { to, buyerName, voucherNumber, amount, voucherId, recipientName, greeting, expiryDate, imageBuffer, isBuyerCopy } = data;
 
     let attachments = [];
 
@@ -42,7 +42,7 @@ async function sendVoucherEmail(data) {
         }
     }
     
-    const displayName = recipientName || buyerName || 'לקוח יקר';
+    const displayName = isBuyerCopy ? (buyerName || 'לקוח יקר') : (recipientName || buyerName || 'לקוח יקר');
 
     // Format amount - check if it's numeric or product name
     const numAmount = parseFloat(amount);
@@ -51,10 +51,19 @@ async function sendVoucherEmail(data) {
     const subjectAmount = isProductVoucher ? amount : `₪${numAmount}`;
     const expiryText = expiryDate ? new Date(expiryDate).toLocaleDateString('he-IL') : 'שנה מיום הרכישה';
 
+    // Different content for buyer vs recipient
+    const emailSubject = isBuyerCopy 
+        ? `העתק שובר המתנה שרכשת - ${subjectAmount} | שפת המדבר`
+        : `שובר המתנה שלך - ${subjectAmount} | שפת המדבר`;
+    
+    const introText = isBuyerCopy
+        ? `תודה על הרכישה! מצורף העתק של שובר המתנה ששלחת${recipientName ? ' ל' + recipientName : ''}:`
+        : 'קיבלת שובר מתנה מיוחד! מצורף השובר שלך:';
+
     const mailOptions = {
         from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
         to,
-        subject: `שובר המתנה שלך - ${subjectAmount} | שפת המדבר`,
+        subject: emailSubject,
         html: `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -78,19 +87,20 @@ async function sendVoucherEmail(data) {
     <div class="container">
         <div class="header">
             <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר" class="logo">
-            <h1>שובר המתנה שלך מוכן!</h1>
+            <h1>${isBuyerCopy ? 'תודה על הרכישה!' : 'שובר המתנה שלך מוכן!'}</h1>
         </div>
         <div class="content">
             <p>שלום ${displayName},</p>
-            <p>קיבלת שובר מתנה מיוחד! מצורף השובר שלך:</p>
+            <p>${introText}</p>
             <div class="voucher-info">
                 <p><strong>מספר שובר:</strong> ${voucherNumber}</p>
                 <p><strong>${isProductVoucher ? 'מוצר' : 'סכום'}:</strong> ${displayAmount}</p>
+                ${recipientName && isBuyerCopy ? `<p><strong>מקבל:</strong> ${recipientName}</p>` : ''}
                 <p><strong>תוקף עד:</strong> ${expiryText}</p>
             </div>
             ${attachments.length > 0 ? '<div class="voucher-image"><img src="cid:voucher" alt="שובר מתנה"></div>' : ''}
             <p>השובר מצורף גם כקובץ תמונה להורדה.</p>
-            ${greeting ? `<p><em>"${greeting.replace(/\n/g, '<br>')}"</em></p>` : ''}
+            ${greeting && !isBuyerCopy ? `<p><em>"${greeting.replace(/\n/g, '<br>')}"</em></p>` : ''}
             <p>בברכה,<br>צוות שפת המדבר</p>
         </div>
         <div class="footer">
