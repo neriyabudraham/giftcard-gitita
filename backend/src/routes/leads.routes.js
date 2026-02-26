@@ -14,7 +14,7 @@ router.get('/', authMiddleware, async (req, res) => {
         `);
 
         // Get all unique buyers - group by email (primary identifier)
-        // A customer is someone who has a voucher in the vouchers table
+        // A customer is someone who has a voucher in the vouchers table (matched by voucher_number OR by buyer email/phone)
         const purchasesResult = await db.query(`
             SELECT 
                 COALESCE(NULLIF(TRIM(p.buyer_email), ''), NULLIF(TRIM(p.buyer_phone), ''), '') as email,
@@ -32,8 +32,15 @@ router.get('/', authMiddleware, async (req, res) => {
                     ) ORDER BY p.created_at DESC
                 ) as vouchers,
                 COUNT(*) as purchase_count,
-                -- Customer = has at least one voucher in vouchers table
-                MAX(CASE WHEN EXISTS (SELECT 1 FROM vouchers v WHERE v.voucher_number = p.voucher_number) THEN 1 ELSE 0 END) as has_voucher,
+                -- Customer = has at least one voucher (by voucher_number OR by buyer email/phone in vouchers table)
+                MAX(CASE 
+                    WHEN EXISTS (SELECT 1 FROM vouchers v WHERE v.voucher_number = p.voucher_number) THEN 1
+                    WHEN EXISTS (SELECT 1 FROM vouchers v WHERE 
+                        (NULLIF(TRIM(v.buyer_email), '') IS NOT NULL AND TRIM(v.buyer_email) = TRIM(p.buyer_email))
+                        OR (NULLIF(TRIM(v.buyer_phone), '') IS NOT NULL AND TRIM(v.buyer_phone) = TRIM(p.buyer_phone))
+                    ) THEN 1
+                    ELSE 0 
+                END) as has_voucher,
                 SUM(CASE WHEN p.status = 'completed' THEN p.amount ELSE 0 END) as total_spent
             FROM purchases p
             WHERE (p.buyer_email IS NOT NULL AND TRIM(p.buyer_email) != '') 
@@ -42,19 +49,123 @@ router.get('/', authMiddleware, async (req, res) => {
             ORDER BY MAX(p.created_at) DESC
         `);
 
-        // Process leads
-        const leads = purchasesResult.rows.map(row => ({
-            email: row.email,
-            phone: row.phone,
-            name: row.name?.trim() || null,
-            created_at: row.created_at,
-            vouchers: row.vouchers,
-            purchase_count: parseInt(row.purchase_count),
-            has_voucher: parseInt(row.has_voucher) > 0,
-            total_spent: parseFloat(row.total_spent) || 0,
-            // Customer = has at least one voucher, Lead = no vouchers
-            type: parseInt(row.has_voucher) > 0 ? 'customer' : 'lead'
-        }));
+        // Also get vouchers directly by buyer email/phone (not just by voucher_number)
+        const vouchersResult = await db.query(`
+            SELECT 
+                COALESCE(NULLIF(TRIM(buyer_email), ''), NULLIF(TRIM(buyer_phone), ''), '') as buyer_id,
+                voucher_number,
+                original_amount as amount,
+                remaining_amount,
+                customer_name as recipient_name,
+                status,
+                created_at
+            FROM vouchers
+            WHERE (buyer_email IS NOT NULL AND TRIM(buyer_email) != '') 
+               OR (buyer_phone IS NOT NULL AND TRIM(buyer_phone) != '')
+        `);
+
+        // Create a map of buyer_id to their vouchers
+        const buyerVouchersMap = {};
+        for (const v of vouchersResult.rows) {
+            if (!buyerVouchersMap[v.buyer_id]) {
+                buyerVouchersMap[v.buyer_id] = [];
+            }
+            buyerVouchersMap[v.buyer_id].push({
+                voucher_number: v.voucher_number,
+                amount: v.amount,
+                remaining_amount: v.remaining_amount,
+                recipient_name: v.recipient_name,
+                status: v.status,
+                created_at: v.created_at,
+                has_voucher: true
+            });
+        }
+
+        // Process leads and merge vouchers from both sources
+        const leads = purchasesResult.rows.map(row => {
+            const purchaseVouchers = row.vouchers || [];
+            const directVouchers = buyerVouchersMap[row.email] || buyerVouchersMap[row.phone] || [];
+            
+            // Merge vouchers, avoid duplicates by voucher_number
+            const voucherMap = {};
+            for (const v of purchaseVouchers) {
+                voucherMap[v.voucher_number] = v;
+            }
+            for (const v of directVouchers) {
+                if (!voucherMap[v.voucher_number]) {
+                    voucherMap[v.voucher_number] = v;
+                } else {
+                    // Mark as has_voucher if found in vouchers table
+                    voucherMap[v.voucher_number].has_voucher = true;
+                }
+            }
+            
+            const allVouchers = Object.values(voucherMap);
+            const hasAnyVoucher = allVouchers.some(v => v.has_voucher) || directVouchers.length > 0;
+            
+            return {
+                email: row.email,
+                phone: row.phone,
+                name: row.name?.trim() || null,
+                created_at: row.created_at,
+                vouchers: allVouchers,
+                purchase_count: parseInt(row.purchase_count),
+                has_voucher: hasAnyVoucher,
+                total_spent: parseFloat(row.total_spent) || 0,
+                // Customer = has at least one voucher, Lead = no vouchers
+                type: hasAnyVoucher ? 'customer' : 'lead'
+            };
+        });
+
+        // Track which buyer IDs are already in leads
+        const existingBuyerIds = new Set(leads.map(l => l.email).concat(leads.map(l => l.phone)).filter(Boolean));
+
+        // Add buyers from vouchers table who don't have purchase records
+        const voucherOnlyBuyers = await db.query(`
+            SELECT 
+                COALESCE(NULLIF(TRIM(buyer_email), ''), NULLIF(TRIM(buyer_phone), ''), '') as email,
+                MAX(COALESCE(NULLIF(TRIM(buyer_phone), ''), '')) as phone,
+                MAX(buyer_name) as name,
+                MIN(created_at) as created_at,
+                ARRAY_AGG(
+                    json_build_object(
+                        'voucher_number', voucher_number,
+                        'amount', original_amount,
+                        'remaining_amount', remaining_amount,
+                        'recipient_name', customer_name,
+                        'status', status,
+                        'created_at', created_at,
+                        'has_voucher', true
+                    ) ORDER BY created_at DESC
+                ) as vouchers,
+                SUM(original_amount) as total_spent
+            FROM vouchers
+            WHERE (buyer_email IS NOT NULL AND TRIM(buyer_email) != '') 
+               OR (buyer_phone IS NOT NULL AND TRIM(buyer_phone) != '')
+            GROUP BY COALESCE(NULLIF(TRIM(buyer_email), ''), NULLIF(TRIM(buyer_phone), ''), '')
+        `);
+
+        for (const row of voucherOnlyBuyers.rows) {
+            // Skip if already in leads
+            if (existingBuyerIds.has(row.email) || existingBuyerIds.has(row.phone)) {
+                continue;
+            }
+            
+            leads.push({
+                email: row.email,
+                phone: row.phone,
+                name: row.name?.trim() || null,
+                created_at: row.created_at,
+                vouchers: row.vouchers,
+                purchase_count: row.vouchers?.length || 0,
+                has_voucher: true,
+                total_spent: parseFloat(row.total_spent) || 0,
+                type: 'customer'
+            });
+        }
+
+        // Sort by created_at desc
+        leads.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         // Calculate stats
         const customers = leads.filter(l => l.type === 'customer');
