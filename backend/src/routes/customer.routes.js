@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { OAuth2Client } = require('google-auth-library');
+const jwt = require('jsonwebtoken');
 const db = require('../db');
 const emailService = require('../services/email.service');
 const { generateCustomerToken, customerAuthMiddleware } = require('../middleware/customerAuth');
+
+const GOOGLE_CUSTOMER_REDIRECT_URI = process.env.GOOGLE_CUSTOMER_REDIRECT_URI ||
+    'https://giftcard-gitita.botomat.co.il/api/customer/auth/google/callback';
 
 // POST /customer/register
 router.post('/register', async (req, res) => {
@@ -330,65 +333,115 @@ router.put('/vouchers/:voucherNumber/greeting', customerAuthMiddleware, async (r
     }
 });
 
-// POST /customer/google-auth
-router.post('/google-auth', async (req, res) => {
+// GET /customer/auth/google — redirect to Google OAuth
+router.get('/auth/google', (req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(500).send('Google login not configured');
+    const scope = encodeURIComponent('email profile');
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(GOOGLE_CUSTOMER_REDIRECT_URI)}&response_type=code&scope=${scope}&access_type=offline&prompt=select_account`;
+    res.redirect(authUrl);
+});
+
+// GET /customer/auth/google/callback — handle Google OAuth callback
+router.get('/auth/google/callback', async (req, res) => {
+    const { code, error } = req.query;
+    if (error) return res.redirect('/portal?auth_error=oauth_error');
+
     try {
-        const { idToken, firstName, lastName, phone } = req.body;
+        // Exchange code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code,
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                redirect_uri: GOOGLE_CUSTOMER_REDIRECT_URI,
+                grant_type: 'authorization_code'
+            })
+        });
+        const tokenData = await tokenResponse.json();
+        if (!tokenData.access_token) return res.redirect('/portal?auth_error=oauth_error');
 
-        if (!idToken) {
-            return res.status(400).json({ error: true, message: 'חסר טוקן גוגל' });
-        }
+        // Get Google user info
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+        const googleUser = await userInfoRes.json();
+        if (!googleUser.email) return res.redirect('/portal?auth_error=oauth_error');
 
-        const clientId = process.env.GOOGLE_CLIENT_ID;
-        if (!clientId) {
-            return res.status(500).json({ error: true, message: 'Google login is not configured on server' });
-        }
+        const normalizedEmail = googleUser.email.toLowerCase();
 
-        // Verify Google ID token
-        const googleClient = new OAuth2Client(clientId);
-        let payload;
-        try {
-            const ticket = await googleClient.verifyIdToken({ idToken, audience: clientId });
-            payload = ticket.getPayload();
-        } catch (e) {
-            return res.status(401).json({ error: true, message: 'טוקן גוגל לא תקין' });
-        }
-
-        const { email, sub: googleId } = payload;
-        const normalizedEmail = email.trim().toLowerCase();
-
-        // Find existing customer by google_id or email
+        // Find or create customer
         const existing = await db.query(
             'SELECT * FROM customers WHERE google_id = $1 OR email = $2 LIMIT 1',
-            [googleId, normalizedEmail]
+            [googleUser.id, normalizedEmail]
         );
 
         let customer;
-        if (existing.rows.length === 0) {
-            // New user — require form fields
-            if (!firstName || !lastName || !phone) {
-                return res.status(400).json({
-                    error: true,
-                    message: 'יש למלא שם פרטי, שם משפחה וטלפון לפני הכניסה עם גוגל'
-                });
-            }
-            const result = await db.query(
-                `INSERT INTO customers (first_name, last_name, email, phone, google_id, is_first_login, is_verified)
-                 VALUES ($1, $2, $3, $4, $5, FALSE, TRUE) RETURNING *`,
-                [firstName.trim(), lastName.trim(), normalizedEmail, phone.trim(), googleId]
-            );
-            customer = result.rows[0];
-        } else {
+        if (existing.rows.length > 0) {
             customer = existing.rows[0];
-            // Link google_id to existing account if not already linked
             if (!customer.google_id) {
                 await db.query(
                     'UPDATE customers SET google_id = $1, is_verified = TRUE WHERE id = $2',
-                    [googleId, customer.id]
+                    [googleUser.id, customer.id]
                 );
+                customer.google_id = googleUser.id;
             }
+        } else {
+            const result = await db.query(
+                `INSERT INTO customers (first_name, last_name, email, google_id, is_first_login, is_verified)
+                 VALUES ($1, $2, $3, $4, FALSE, TRUE) RETURNING *`,
+                [googleUser.given_name || '', googleUser.family_name || '', normalizedEmail, googleUser.id]
+            );
+            customer = result.rows[0];
         }
 
+        // If profile incomplete (missing phone), issue temp token for completion
+        if (!customer.phone || !customer.first_name || !customer.last_name) {
+            const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+            const tempToken = jwt.sign(
+                { id: customer.id, type: 'complete_profile', firstName: customer.first_name, lastName: customer.last_name },
+                secret,
+                { expiresIn: '1h' }
+            );
+            return res.redirect(`/portal?needsProfile=${tempToken}`);
+        }
+
+        const token = generateCustomerToken(customer);
+        return res.redirect(`/portal?authToken=${token}`);
+
+    } catch (err) {
+        console.error('Customer Google callback error:', err);
+        res.redirect('/portal?auth_error=oauth_error');
+    }
+});
+
+// POST /customer/complete-profile — complete profile after Google login
+router.post('/complete-profile', async (req, res) => {
+    const { tempToken, phone, firstName, lastName } = req.body;
+    if (!tempToken || !phone) {
+        return res.status(400).json({ error: true, message: 'יש להזין מספר טלפון' });
+    }
+    try {
+        const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+        const decoded = jwt.verify(tempToken, secret);
+        if (decoded.type !== 'complete_profile') {
+            return res.status(401).json({ error: true, message: 'טוקן לא תקין' });
+        }
+
+        const setParts = ['phone = $1'];
+        const values = [phone.trim()];
+        let idx = 2;
+        if (firstName) { setParts.push(`first_name = $${idx++}`); values.push(firstName.trim()); }
+        if (lastName) { setParts.push(`last_name = $${idx++}`); values.push(lastName.trim()); }
+        values.push(decoded.id);
+
+        const result = await db.query(
+            `UPDATE customers SET ${setParts.join(', ')} WHERE id = $${idx} RETURNING *`,
+            values
+        );
+        const customer = result.rows[0];
         const token = generateCustomerToken(customer);
         res.json({
             success: true,
@@ -402,9 +455,9 @@ router.post('/google-auth', async (req, res) => {
                 isFirstLogin: false
             }
         });
-    } catch (error) {
-        console.error('Google auth error:', error);
-        res.status(500).json({ error: true, message: 'שגיאה בהתחברות עם גוגל' });
+    } catch (err) {
+        console.error('Complete profile error:', err);
+        res.status(401).json({ error: true, message: 'הקישור פג תוקף, אנא התחבר שוב' });
     }
 });
 

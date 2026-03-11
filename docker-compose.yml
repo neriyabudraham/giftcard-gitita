@@ -32,6 +32,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://giftcard-gitita.botomat.co.il/api/auth/google/callback}
+      - GOOGLE_CUSTOMER_REDIRECT_URI=${GOOGLE_CUSTOMER_REDIRECT_URI:-https://giftcard-gitita.botomat.co.il/api/customer/auth/google/callback}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       - ADMIN_EMAIL=office@neriyabudraham.co.il
     volumes:
