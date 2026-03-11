@@ -593,6 +593,9 @@ router.delete('/:id', authMiddleware, async (req, res) => {
             return res.status(403).json({ error: true, message: 'רק מנהל יכול למחוק שוברים' });
         }
 
+        // Delete related records first (foreign key constraints)
+        await db.query('DELETE FROM voucher_usage WHERE voucher_id = $1', [id]);
+        await db.query('DELETE FROM purchases WHERE voucher_id = $1', [id]);
         await db.query('DELETE FROM vouchers WHERE id = $1', [id]);
 
         res.json({ success: true });
