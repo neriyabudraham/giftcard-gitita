@@ -414,7 +414,8 @@ router.post('/webhook', async (req, res) => {
                     recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
                     greeting: purchase.greeting,
                     expiryDate: expiryDate,
-                    imageBuffer
+                    imageBuffer,
+                    isBuyerCopy: true
                 });
                 console.log('Email sent to customer:', purchase.buyer_email);
             } catch (emailError) {
