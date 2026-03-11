@@ -413,9 +413,14 @@
                             <option value="used">נוצל</option>
                         </select>
                     </div>
-                    <div style="display:flex;gap:10px;margin-top:20px">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('editVoucherModal')" style="flex:1">ביטול</button>
-                        <button type="submit" class="btn btn-primary" style="flex:1">שמור שינויים</button>
+                    <div class="form-group">
+                        <label>ברכה על השובר</label>
+                        <textarea id="editGreeting" style="min-height:120px;resize:vertical"></textarea>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editVoucherModal')" style="flex:1;min-width:100px">ביטול</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;min-width:120px">שמור שינויים</button>
+                        <button type="button" class="btn" style="flex:1;min-width:150px;background:rgba(34,197,94,0.2);color:#22c55e" onclick="saveAndDownloadVoucher()">שמור + הורד מעודכן</button>
                     </div>
                 </form>
             </div>
@@ -657,6 +662,7 @@
                             <th>מקבל</th>
                             <th>טלפון מקבל</th>
                             <th>מייל מקבל</th>
+                            <th>ברכה</th>
                             <th>פעולות</th>
                         </tr>
                     </thead>
@@ -672,6 +678,7 @@
                                 <td>${(p.recipient_first_name || '') + ' ' + (p.recipient_last_name || '')}</td>
                                 <td>${p.recipient_phone || '-'}</td>
                                 <td style="font-size:0.85rem">${p.recipient_email || '-'}</td>
+                                <td style="max-width:150px;font-size:0.8rem;color:#aaa;white-space:pre-wrap;overflow:hidden;text-overflow:ellipsis" title="${(p.greeting || '').replace(/"/g,'&quot;')}">${p.greeting ? p.greeting.substring(0,60) + (p.greeting.length > 60 ? '...' : '') : '-'}</td>
                                 <td class="actions-cell">
                                     <button class="btn btn-sm" style="background:rgba(251,191,36,0.2);color:#fbbf24" onclick="approvePurchase(${p.id}, '${p.voucher_number}')">✅ אשר</button>
                                     <button class="btn btn-sm btn-secondary" onclick="cancelPendingPurchase(${p.id})">🗑️</button>
@@ -1186,7 +1193,7 @@
         function openEditVoucherModal(id) {
             const voucher = vouchers.find(v => v.id === id);
             if (!voucher) return;
-            
+
             document.getElementById('editVoucherId').value = id;
             document.getElementById('editVoucherNumber').value = voucher.voucher_number;
             document.getElementById('editCustomerName').value = voucher.customer_name || '';
@@ -1195,7 +1202,8 @@
             document.getElementById('editRemainingAmount').value = voucher.remaining_amount;
             document.getElementById('editExpiryDate').value = voucher.expiry_date ? voucher.expiry_date.split('T')[0] : '';
             document.getElementById('editStatus').value = voucher.status;
-            
+            document.getElementById('editGreeting').value = voucher.greeting || '';
+
             document.getElementById('editVoucherModal').classList.add('show');
         }
 
@@ -1208,7 +1216,8 @@
                 phone_number: document.getElementById('editPhoneNumber').value,
                 remaining_amount: parseFloat(document.getElementById('editRemainingAmount').value),
                 expiry_date: document.getElementById('editExpiryDate').value || null,
-                status: document.getElementById('editStatus').value
+                status: document.getElementById('editStatus').value,
+                greeting: document.getElementById('editGreeting').value || null
             };
             
             try {
@@ -1234,6 +1243,59 @@
                 alert('שגיאה בעדכון השובר');
             }
         });
+
+        async function saveAndDownloadVoucher() {
+            const id = document.getElementById('editVoucherId').value;
+            const voucherNumber = document.getElementById('editVoucherNumber').value;
+            const data = {
+                customer_name: document.getElementById('editCustomerName').value,
+                phone_number: document.getElementById('editPhoneNumber').value,
+                remaining_amount: parseFloat(document.getElementById('editRemainingAmount').value),
+                expiry_date: document.getElementById('editExpiryDate').value || null,
+                status: document.getElementById('editStatus').value,
+                greeting: document.getElementById('editGreeting').value || null
+            };
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ שומר...';
+
+            try {
+                const res = await fetch(`${API}/vouchers/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (!result.success) throw new Error(result.message || 'שגיאה בעדכון');
+
+                // Download with force regenerate
+                btn.textContent = '⏳ מייצר שובר...';
+                const response = await fetch(`${API}/voucher/${voucherNumber}/generate?force=true`, { credentials: 'include' });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `voucher-${voucherNumber}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    closeModal('editVoucherModal');
+                    loadVouchers();
+                    showNotification('השובר עודכן והורד בהצלחה', 'success');
+                } else {
+                    throw new Error('שגיאה ביצירת תמונת השובר');
+                }
+            } catch (error) {
+                showErrorModal(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'שמור + הורד מעודכן';
+            }
+        }
 
         async function deleteVoucher(id) {
             const voucher = vouchers.find(v => v.id === id);

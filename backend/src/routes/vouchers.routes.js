@@ -485,21 +485,23 @@ router.put('/:id', authMiddleware, async (req, res) => {
             email,
             expiry_date,
             status,
-            remaining_amount
+            remaining_amount,
+            greeting
         } = req.body;
 
         const result = await db.query(
-            `UPDATE vouchers SET 
+            `UPDATE vouchers SET
              customer_name = COALESCE($1, customer_name),
              phone_number = COALESCE($2, phone_number),
              email = COALESCE($3, email),
              expiry_date = COALESCE($4, expiry_date),
              status = COALESCE($5, status),
              remaining_amount = COALESCE($6, remaining_amount),
+             greeting = COALESCE($7, greeting),
              updated_at = NOW()
-             WHERE id = $7
+             WHERE id = $8
              RETURNING *`,
-            [customer_name, phone_number, email, expiry_date, status, remaining_amount, id]
+            [customer_name, phone_number, email, expiry_date, status, remaining_amount, greeting || null, id]
         );
 
         if (result.rows.length === 0) {
