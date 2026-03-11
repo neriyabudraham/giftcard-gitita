@@ -378,8 +378,12 @@
             document.getElementById('successState').classList.remove('hidden');
             
             document.getElementById('voucherNum').textContent = voucher.voucher_number;
-            const amount = parseFloat(voucher.original_amount);
-            document.getElementById('voucherAmount').textContent = `₪${Number.isInteger(amount) ? amount : amount.toLocaleString()}`;
+            if (voucher.product_name) {
+                document.getElementById('voucherAmount').textContent = voucher.product_name;
+            } else {
+                const amount = parseFloat(voucher.original_amount);
+                document.getElementById('voucherAmount').textContent = `₪${Number.isInteger(amount) ? amount : amount.toLocaleString()}`;
+            }
             document.getElementById('recipientName').textContent = voucher.recipient_name || voucher.customer_name || '-';
             document.getElementById('expiryDate').textContent = voucher.expiry_date 
                 ? new Date(voucher.expiry_date).toLocaleDateString('he-IL') 
