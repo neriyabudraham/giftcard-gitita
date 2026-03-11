@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const db = require('../db');
 const emailService = require('../services/email.service');
 const { generateCustomerToken, customerAuthMiddleware } = require('../middleware/customerAuth');
@@ -88,6 +89,10 @@ router.post('/login', async (req, res) => {
 
         if (!customer.is_verified) {
             return res.status(401).json({ error: true, message: 'יש לאמת את כתובת המייל תחילה. בדקו את תיבת הדואר.' });
+        }
+
+        if (!customer.password_hash) {
+            return res.status(401).json({ error: true, message: 'חשבון זה משתמש בכניסה עם גוגל. אנא התחבר עם כפתור Google.' });
         }
 
         const validPassword = await bcrypt.compare(password, customer.password_hash);
@@ -322,6 +327,84 @@ router.put('/vouchers/:voucherNumber/greeting', customerAuthMiddleware, async (r
     } catch (error) {
         console.error('Customer update greeting error:', error);
         res.status(500).json({ error: true, message: 'שגיאה בעדכון ברכה' });
+    }
+});
+
+// POST /customer/google-auth
+router.post('/google-auth', async (req, res) => {
+    try {
+        const { idToken, firstName, lastName, phone } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ error: true, message: 'חסר טוקן גוגל' });
+        }
+
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        if (!clientId) {
+            return res.status(500).json({ error: true, message: 'Google login is not configured on server' });
+        }
+
+        // Verify Google ID token
+        const googleClient = new OAuth2Client(clientId);
+        let payload;
+        try {
+            const ticket = await googleClient.verifyIdToken({ idToken, audience: clientId });
+            payload = ticket.getPayload();
+        } catch (e) {
+            return res.status(401).json({ error: true, message: 'טוקן גוגל לא תקין' });
+        }
+
+        const { email, sub: googleId } = payload;
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Find existing customer by google_id or email
+        const existing = await db.query(
+            'SELECT * FROM customers WHERE google_id = $1 OR email = $2 LIMIT 1',
+            [googleId, normalizedEmail]
+        );
+
+        let customer;
+        if (existing.rows.length === 0) {
+            // New user — require form fields
+            if (!firstName || !lastName || !phone) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'יש למלא שם פרטי, שם משפחה וטלפון לפני הכניסה עם גוגל'
+                });
+            }
+            const result = await db.query(
+                `INSERT INTO customers (first_name, last_name, email, phone, google_id, is_first_login, is_verified)
+                 VALUES ($1, $2, $3, $4, $5, FALSE, TRUE) RETURNING *`,
+                [firstName.trim(), lastName.trim(), normalizedEmail, phone.trim(), googleId]
+            );
+            customer = result.rows[0];
+        } else {
+            customer = existing.rows[0];
+            // Link google_id to existing account if not already linked
+            if (!customer.google_id) {
+                await db.query(
+                    'UPDATE customers SET google_id = $1, is_verified = TRUE WHERE id = $2',
+                    [googleId, customer.id]
+                );
+            }
+        }
+
+        const token = generateCustomerToken(customer);
+        res.json({
+            success: true,
+            token,
+            customer: {
+                id: customer.id,
+                firstName: customer.first_name,
+                lastName: customer.last_name,
+                email: customer.email,
+                phone: customer.phone,
+                isFirstLogin: false
+            }
+        });
+    } catch (error) {
+        console.error('Google auth error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה בהתחברות עם גוגל' });
     }
 });
 

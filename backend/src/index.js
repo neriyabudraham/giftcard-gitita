@@ -23,6 +23,7 @@ async function runMigrations() {
     try {
         await db.query('ALTER TABLE purchases ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255)');
         await db.query('ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255)');
+        await db.query('ALTER TABLE customers ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)');
         await db.query(`
             CREATE TABLE IF NOT EXISTS customers (
                 id SERIAL PRIMARY KEY,
@@ -104,6 +105,11 @@ app.use('/upload', uploadRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/leads', leadsRoutes);
 app.use('/customer', customerRoutes);
+
+// Public config (exposes non-sensitive client-side config)
+app.get('/config', (req, res) => {
+    res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || null });
+});
 
 // Health check
 app.get('/health', (req, res) => {

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>אזור אישי - שפת המדבר</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -376,6 +377,55 @@
         }
         .empty-state svg { width: 50px; height: 50px; margin-bottom: 12px; opacity: 0.4; }
 
+        /* Google sign-in section */
+        .google-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0 16px;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.85rem;
+        }
+        .google-divider::before, .google-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+        .google-section {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .google-section-title {
+            font-size: 0.88rem;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 14px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .google-btn-wrap {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+            transition: opacity 0.2s;
+        }
+        .google-btn-blocker {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            cursor: not-allowed;
+            border-radius: 4px;
+        }
+        .google-fields-hint {
+            color: rgba(255,255,255,0.35);
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 8px;
+        }
+
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
             .auth-card { padding: 24px; }
@@ -428,6 +478,31 @@
                 <span class="forgot-link" onclick="showForgotPassword()">שכחתי סיסמה</span>
             </div>
             <button class="btn-primary" onclick="doLogin()" id="loginBtn">כניסה</button>
+
+            <!-- Google Sign-In (shown only when GOOGLE_CLIENT_ID is configured) -->
+            <div id="googleDivider" class="google-divider" style="display:none"><span>או</span></div>
+            <div id="googleSection" class="google-section" style="display:none">
+                <p class="google-section-title">כניסה עם גוגל — יש למלא את הפרטים הבאים תחילה:</p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">שם פרטי *</label>
+                        <input type="text" id="googleFirstName" class="form-input" placeholder="שם פרטי" oninput="checkGoogleFields()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">שם משפחה *</label>
+                        <input type="text" id="googleLastName" class="form-input" placeholder="שם משפחה" oninput="checkGoogleFields()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">טלפון *</label>
+                    <input type="tel" id="googlePhone" class="form-input" placeholder="050-0000000" oninput="checkGoogleFields()">
+                </div>
+                <div class="google-btn-wrap" id="googleBtnWrap" style="opacity:0.4;">
+                    <div id="googleBtnContainer"></div>
+                    <div id="googleBtnBlocker" class="google-btn-blocker" onclick="showAuthAlert('error', 'יש למלא שם פרטי, שם משפחה וטלפון לפני הכניסה עם גוגל')"></div>
+                </div>
+                <p class="google-fields-hint" id="googleFieldsHint">יש למלא את כל הפרטים כדי להפעיל את כפתור הכניסה</p>
+            </div>
         </div>
 
         <!-- Register Form -->
@@ -652,6 +727,11 @@
         document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
         document.getElementById('forgotForm').style.display = 'none';
         document.getElementById('authAlert').innerHTML = '';
+        // Show/hide Google section only on login tab
+        if (googleClientId) {
+            document.getElementById('googleDivider').style.display = tab === 'login' ? 'flex' : 'none';
+            document.getElementById('googleSection').style.display = tab === 'login' ? 'block' : 'none';
+        }
     }
 
     function showForgotPassword() {
@@ -1036,8 +1116,85 @@
         }
     }
 
+    // Google Sign-In
+    let googleClientId = null;
+
+    async function loadGoogleConfig() {
+        try {
+            const res = await fetch(`${API}/config`);
+            const data = await res.json();
+            if (data.googleClientId) {
+                googleClientId = data.googleClientId;
+                document.getElementById('googleDivider').style.display = 'flex';
+                document.getElementById('googleSection').style.display = 'block';
+                // Init when GIS library is ready
+                if (typeof google !== 'undefined' && google.accounts) {
+                    initGoogleSignIn();
+                } else {
+                    window.onGoogleLibraryLoad = initGoogleSignIn;
+                }
+            }
+        } catch {
+            // Google login unavailable — just hide the section silently
+        }
+    }
+
+    function initGoogleSignIn() {
+        if (!googleClientId) return;
+        google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredential
+        });
+        google.accounts.id.renderButton(
+            document.getElementById('googleBtnContainer'),
+            { theme: 'outline', size: 'large', width: 360, text: 'continue_with', locale: 'he' }
+        );
+    }
+
+    function checkGoogleFields() {
+        const firstName = document.getElementById('googleFirstName').value.trim();
+        const lastName = document.getElementById('googleLastName').value.trim();
+        const phone = document.getElementById('googlePhone').value.trim();
+        const wrap = document.getElementById('googleBtnWrap');
+        const blocker = document.getElementById('googleBtnBlocker');
+        const hint = document.getElementById('googleFieldsHint');
+        const ready = firstName && lastName && phone;
+        wrap.style.opacity = ready ? '1' : '0.4';
+        blocker.style.display = ready ? 'none' : 'block';
+        hint.style.display = ready ? 'none' : 'block';
+    }
+
+    async function handleGoogleCredential(response) {
+        const firstName = document.getElementById('googleFirstName').value.trim();
+        const lastName = document.getElementById('googleLastName').value.trim();
+        const phone = document.getElementById('googlePhone').value.trim();
+
+        if (!firstName || !lastName || !phone) {
+            showAuthAlert('error', 'יש למלא שם פרטי, שם משפחה וטלפון לפני הכניסה עם גוגל');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/customer/google-auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: response.credential, firstName, lastName, phone })
+            });
+            const data = await res.json();
+            if (data.error) { showAuthAlert('error', data.message); return; }
+
+            token = data.token;
+            localStorage.setItem('customerToken', token);
+            currentCustomer = data.customer;
+            showDashboard();
+        } catch {
+            showAuthAlert('error', 'שגיאה בהתחברות עם גוגל');
+        }
+    }
+
     // Init
     init();
+    loadGoogleConfig();
 </script>
 </body>
 </html>
