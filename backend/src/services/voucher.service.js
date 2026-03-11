@@ -270,6 +270,14 @@ function generateVoucherHTML(data) {
             color: #333;
             font-weight: 600;
         }
+
+        /* Twemoji inline sizing */
+        img.emoji {
+            height: 1em;
+            width: 1em;
+            vertical-align: -0.1em;
+            display: inline;
+        }
     </style>
 </head>
 <body>
