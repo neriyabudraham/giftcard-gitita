@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const voucherService = require('../services/voucher.service');
 const emailService = require('../services/email.service');
+const { authMiddleware } = require('../middleware/auth');
 
 // Generate random voucher number (13 digits)
 function generateVoucherNumber() {
@@ -600,6 +601,149 @@ router.post('/complete/:voucherId', async (req, res) => {
     } catch (error) {
         console.error('Complete payment error:', error);
         res.status(500).json({ error: true, message: 'שגיאה בהשלמת תשלום' });
+    }
+});
+
+// Cancel a pending purchase - admin
+router.post('/:id/cancel', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query(
+            "UPDATE purchases SET status = 'cancelled' WHERE id = $1 AND status = 'pending'",
+            [id]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: true, message: 'שגיאה בביטול רכישה' });
+    }
+});
+
+// Get pending purchases (last 48 hours) - admin
+router.get('/pending', authMiddleware, async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM purchases
+             WHERE status = 'pending'
+             AND created_at > NOW() - INTERVAL '48 hours'
+             ORDER BY created_at DESC`
+        );
+        res.json({ success: true, purchases: result.rows });
+    } catch (error) {
+        console.error('Get pending purchases error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה בטעינת רכישות ממתינות' });
+    }
+});
+
+// Manually approve a pending purchase - admin
+router.post('/:id/approve', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const purchaseResult = await db.query('SELECT * FROM purchases WHERE id = $1', [id]);
+        if (purchaseResult.rows.length === 0) {
+            return res.status(404).json({ error: true, message: 'רכישה לא נמצאה' });
+        }
+
+        const purchase = purchaseResult.rows[0];
+        if (purchase.status === 'completed') {
+            return res.status(400).json({ error: true, message: 'רכישה כבר אושרה' });
+        }
+
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        const voucherDisplayAmount = purchase.product_name || purchase.amount;
+
+        // Create voucher
+        const voucherResult = await db.query(
+            `INSERT INTO vouchers
+             (voucher_number, original_amount, remaining_amount, customer_name, phone_number, email,
+              expiry_date, greeting, buyer_name, buyer_phone, buyer_email, recipient_name, recipient_phone, product_name, status)
+             VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active')
+             RETURNING *`,
+            [
+                purchase.voucher_number,
+                purchase.amount,
+                `${purchase.recipient_first_name || ''} ${purchase.recipient_last_name || ''}`.trim(),
+                purchase.recipient_phone,
+                purchase.buyer_email,
+                expiryDate.toISOString().split('T')[0],
+                purchase.greeting,
+                `${purchase.buyer_first_name || ''} ${purchase.buyer_last_name || ''}`.trim(),
+                purchase.buyer_phone,
+                purchase.buyer_email,
+                `${purchase.recipient_first_name || ''} ${purchase.recipient_last_name || ''}`.trim(),
+                purchase.recipient_phone,
+                purchase.product_name
+            ]
+        );
+        const voucher = voucherResult.rows[0];
+
+        await db.query(
+            'UPDATE purchases SET status = $1, voucher_id = $2, completed_at = NOW() WHERE id = $3',
+            ['completed', voucher.id, id]
+        );
+
+        // Generate voucher image
+        let imageBuffer = null;
+        try {
+            imageBuffer = await voucherService.generateVoucherImage({
+                voucherId: purchase.voucher_number,
+                amount: voucherDisplayAmount,
+                greeting: purchase.greeting,
+                recipientName: `${purchase.recipient_first_name || ''} ${purchase.recipient_last_name || ''}`.trim(),
+                expiryDate: expiryDate.toLocaleDateString('he-IL')
+            });
+            await db.query(
+                'UPDATE vouchers SET voucher_image_url = $1 WHERE id = $2',
+                [`/api/voucher/${purchase.voucher_number}/image`, voucher.id]
+            );
+        } catch (imgError) {
+            console.error('Error generating voucher image:', imgError);
+        }
+
+        // Send email to buyer
+        try {
+            await emailService.sendVoucherEmail({
+                to: purchase.buyer_email,
+                buyerName: `${purchase.buyer_first_name || ''} ${purchase.buyer_last_name || ''}`.trim(),
+                voucherNumber: purchase.voucher_number,
+                amount: voucherDisplayAmount,
+                voucherId: purchase.voucher_number,
+                recipientName: `${purchase.recipient_first_name || ''} ${purchase.recipient_last_name || ''}`.trim(),
+                greeting: purchase.greeting,
+                expiryDate,
+                imageBuffer,
+                isBuyerCopy: true
+            });
+        } catch (emailError) {
+            console.error('Error sending email to buyer:', emailError);
+        }
+
+        // Send email to recipient if they have email
+        if (purchase.recipient_email) {
+            try {
+                await emailService.sendVoucherEmail({
+                    to: purchase.recipient_email,
+                    buyerName: `${purchase.buyer_first_name || ''} ${purchase.buyer_last_name || ''}`.trim(),
+                    voucherNumber: purchase.voucher_number,
+                    amount: voucherDisplayAmount,
+                    voucherId: purchase.voucher_number,
+                    recipientName: `${purchase.recipient_first_name || ''} ${purchase.recipient_last_name || ''}`.trim(),
+                    greeting: purchase.greeting,
+                    expiryDate,
+                    imageBuffer,
+                    isBuyerCopy: false
+                });
+            } catch (emailError) {
+                console.error('Error sending email to recipient:', emailError);
+            }
+        }
+
+        res.json({ success: true, voucher, voucherNumber: purchase.voucher_number });
+
+    } catch (error) {
+        console.error('Approve purchase error:', error);
+        res.status(500).json({ error: true, message: 'שגיאה באישור רכישה' });
     }
 });
 

@@ -306,6 +306,22 @@
                 <h3>סכום כולל פעיל</h3>
                 <div class="value" id="totalAmount">-</div>
             </div>
+            <div class="stat-card" style="border:1px solid rgba(251,191,36,0.3);cursor:pointer" onclick="document.getElementById('pendingCard').scrollIntoView({behavior:'smooth'})">
+                <h3>ממתינות לאישור</h3>
+                <div class="value" id="pendingCount" style="color:#fbbf24">-</div>
+            </div>
+        </div>
+
+        <!-- Pending Purchases Card -->
+        <div class="card" id="pendingCard" style="margin-bottom:30px;border:1px solid rgba(251,191,36,0.3);display:none">
+            <div class="card-header" style="background:rgba(251,191,36,0.08)">
+                <h2 style="color:#fbbf24">⏳ ממתין לאישור עסקה</h2>
+                <button class="btn btn-secondary btn-sm" onclick="loadPendingPurchases()">רענן</button>
+            </div>
+            <div class="card-body">
+                <p style="color:#aaa;font-size:0.9rem;margin-bottom:15px">רכישות שנוצרו ב-48 השעות האחרונות ולא קושרו לתשלום. ניתן לאשר ידנית לאחר אימות מול מנגנון התשלום.</p>
+                <div id="pendingTable"><div class="loading">טוען...</div></div>
+            </div>
         </div>
 
         <div class="card">
@@ -590,9 +606,117 @@
                 
                 loadVouchers();
                 loadStats();
-                
+                loadPendingPurchases();
+
             } catch (error) {
                 window.location.href = '/admin/login';
+            }
+        }
+
+        let pendingPurchases = [];
+
+        async function loadPendingPurchases() {
+            try {
+                const res = await fetch(`${API}/purchases/pending`, { credentials: 'include' });
+                const data = await res.json();
+                pendingPurchases = data.purchases || [];
+                document.getElementById('pendingCount').textContent = pendingPurchases.length;
+                const card = document.getElementById('pendingCard');
+                card.style.display = pendingPurchases.length > 0 ? 'block' : 'none';
+                renderPendingPurchases();
+            } catch (error) {
+                console.error('Error loading pending purchases:', error);
+            }
+        }
+
+        function timeAgo(dateStr) {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 60) return `לפני ${mins} דקות`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `לפני ${hours} שעות`;
+            return `לפני ${Math.floor(hours / 24)} ימים`;
+        }
+
+        function renderPendingPurchases() {
+            const el = document.getElementById('pendingTable');
+            if (pendingPurchases.length === 0) {
+                el.innerHTML = '<div class="empty-state"><p>אין רכישות ממתינות</p></div>';
+                return;
+            }
+            el.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>נוצר</th>
+                            <th>מספר שובר</th>
+                            <th>סכום</th>
+                            <th>רוכש</th>
+                            <th>טלפון רוכש</th>
+                            <th>מייל רוכש</th>
+                            <th>מקבל</th>
+                            <th>טלפון מקבל</th>
+                            <th>מייל מקבל</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${pendingPurchases.map(p => `
+                            <tr>
+                                <td style="white-space:nowrap;color:#aaa;font-size:0.85rem">${timeAgo(p.created_at)}</td>
+                                <td><strong style="font-size:0.85rem">${p.voucher_number}</strong></td>
+                                <td><strong style="color:#fbbf24">${p.product_name || '₪' + parseInt(p.amount)}</strong></td>
+                                <td>${(p.buyer_first_name || '') + ' ' + (p.buyer_last_name || '')}</td>
+                                <td>${p.buyer_phone || '-'}</td>
+                                <td style="font-size:0.85rem">${p.buyer_email || '-'}</td>
+                                <td>${(p.recipient_first_name || '') + ' ' + (p.recipient_last_name || '')}</td>
+                                <td>${p.recipient_phone || '-'}</td>
+                                <td style="font-size:0.85rem">${p.recipient_email || '-'}</td>
+                                <td class="actions-cell">
+                                    <button class="btn btn-sm" style="background:rgba(251,191,36,0.2);color:#fbbf24" onclick="approvePurchase(${p.id}, '${p.voucher_number}')">✅ אשר</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelPendingPurchase(${p.id})">🗑️</button>
+                                </td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        async function approvePurchase(id, voucherNumber) {
+            if (!confirm(`אשר רכישה ידנית?\nשובר: ${voucherNumber}\n\nהמערכת תיצור את השובר ותשלח מיילים.`)) return;
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ מעבד...';
+
+            try {
+                const res = await fetch(`${API}/purchases/${id}/approve`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                showNotification(`שובר ${voucherNumber} אושר ונשלח בהצלחה!`, 'success');
+                loadPendingPurchases();
+                loadVouchers();
+                loadStats();
+            } catch (error) {
+                showErrorModal(error.message || 'שגיאה באישור רכישה');
+                btn.disabled = false;
+                btn.textContent = '✅ אשר';
+            }
+        }
+
+        async function cancelPendingPurchase(id) {
+            if (!confirm('בטל רכישה ממתינה זו?')) return;
+            try {
+                await fetch(`${API}/purchases/${id}/cancel`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                loadPendingPurchases();
+            } catch (e) {
+                // Even if cancel endpoint doesn't exist, just refresh
+                loadPendingPurchases();
             }
         }
 
