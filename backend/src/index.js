@@ -12,6 +12,7 @@ const productsRoutes = require('./routes/products.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const leadsRoutes = require('./routes/leads.routes');
+const customerRoutes = require('./routes/customer.routes');
 
 const db = require('./db');
 const app = express();
@@ -22,6 +23,24 @@ async function runMigrations() {
     try {
         await db.query('ALTER TABLE purchases ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255)');
         await db.query('ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255)');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS customers (
+                id SERIAL PRIMARY KEY,
+                first_name VARCHAR(100),
+                last_name VARCHAR(100),
+                email VARCHAR(255) UNIQUE NOT NULL,
+                phone VARCHAR(20),
+                password_hash VARCHAR(255),
+                temp_password VARCHAR(20),
+                is_first_login BOOLEAN DEFAULT TRUE,
+                is_verified BOOLEAN DEFAULT FALSE,
+                verify_token VARCHAR(255),
+                verify_token_expires TIMESTAMP,
+                reset_token VARCHAR(255),
+                reset_token_expires TIMESTAMP,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
         console.log('DB migrations completed');
     } catch (err) {
         console.error('DB migration error:', err.message);
@@ -39,26 +58,27 @@ app.use(cookieParser());
 
 // Static files for admin panel with clean URLs
 const adminPath = path.join(__dirname, '../public/admin');
+const publicPath = path.join(__dirname, '../public');
 const fs = require('fs');
 
 // Serve admin files without .html extension
 app.use('/admin', (req, res, next) => {
     let filePath = req.path;
-    
+
     // Remove trailing slash
     if (filePath.endsWith('/') && filePath !== '/') {
         filePath = filePath.slice(0, -1);
     }
-    
+
     // Check if it's a directory or file without extension
     const fullPath = path.join(adminPath, filePath);
     const htmlPath = fullPath + '.html';
-    
+
     // If no extension and .html file exists, serve it
     if (!path.extname(filePath) && fs.existsSync(htmlPath)) {
         return res.sendFile(htmlPath);
     }
-    
+
     next();
 });
 
@@ -66,6 +86,11 @@ app.use('/admin', express.static(adminPath));
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Serve portal page at /portal
+app.get('/portal', (req, res) => {
+    res.sendFile(path.join(publicPath, 'portal.html'));
+});
 
 // Routes
 app.use('/auth', authRoutes);
@@ -78,6 +103,7 @@ app.use('/products', productsRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/leads', leadsRoutes);
+app.use('/customer', customerRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -304,8 +304,8 @@
                     <input type="text" name="recipientFirstName" class="form-input" placeholder="הכניסו שם פרטי" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">שם משפחה *</label>
-                    <input type="text" name="recipientLastName" class="form-input" placeholder="הכניסו שם משפחה" required>
+                    <label class="form-label">שם משפחה</label>
+                    <input type="text" name="recipientLastName" class="form-input" placeholder="הכניסו שם משפחה">
                 </div>
             </div>
 
@@ -392,7 +392,17 @@
             }
         }
         loadDefaultGreeting();
-        
+
+        // Auto-fill buyer info if coming from portal
+        const savedBuyerInfo = JSON.parse(localStorage.getItem('buyerInfo') || 'null');
+        if (savedBuyerInfo) {
+            if (savedBuyerInfo.firstName) document.querySelector('[name=buyerFirstName]').value = savedBuyerInfo.firstName;
+            if (savedBuyerInfo.lastName) document.querySelector('[name=buyerLastName]').value = savedBuyerInfo.lastName;
+            if (savedBuyerInfo.email) document.querySelector('[name=buyerEmail]').value = savedBuyerInfo.email;
+            if (savedBuyerInfo.phone) document.querySelector('[name=buyerPhone]').value = savedBuyerInfo.phone;
+            localStorage.removeItem('buyerInfo');
+        }
+
         document.getElementById('purchaseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             

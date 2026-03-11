@@ -1,9 +1,44 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const db = require('../db');
 const voucherService = require('../services/voucher.service');
 const emailService = require('../services/email.service');
 const { authMiddleware } = require('../middleware/auth');
+
+// Generate random temp password
+function generateTempPassword() {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
+// Create or find customer by email, send credentials if new
+async function createOrFindCustomer(email, firstName, lastName, phone) {
+    if (!email) return;
+    try {
+        const existing = await db.query('SELECT * FROM customers WHERE email = $1', [email.toLowerCase()]);
+        if (existing.rows.length === 0) {
+            const tempPassword = generateTempPassword();
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+            await db.query(
+                `INSERT INTO customers (first_name, last_name, email, phone, password_hash, temp_password, is_first_login, is_verified)
+                 VALUES ($1, $2, $3, $4, $5, $6, TRUE, TRUE)`,
+                [firstName || '', lastName || '', email.toLowerCase(), phone || '', hashedPassword, tempPassword]
+            );
+            await emailService.sendCustomerCredentialsEmail(email, `${firstName || ''} ${lastName || ''}`.trim(), email, tempPassword);
+        } else if (existing.rows[0].is_first_login && existing.rows[0].temp_password) {
+            // Hasn't logged in yet - resend same temp password
+            await emailService.sendCustomerCredentialsEmail(email, `${firstName || ''} ${lastName || ''}`.trim(), email, existing.rows[0].temp_password);
+        }
+    } catch (err) {
+        console.error('Error creating/finding customer:', err);
+    }
+}
 
 // Generate random voucher number (13 digits)
 function generateVoucherNumber() {
@@ -489,8 +524,15 @@ router.post('/webhook', async (req, res) => {
             }
         }
 
-        res.json({ 
-            success: true, 
+        // Create or find customer account for the buyer
+        const buyerEmail = customerFound ? purchase.buyer_email : payerEmail;
+        const buyerFirstName = customerFound ? purchase.buyer_first_name : (payerName ? payerName.split(' ')[0] : '');
+        const buyerLastName = customerFound ? purchase.buyer_last_name : (payerName ? payerName.split(' ').slice(1).join(' ') : '');
+        const buyerPhone = customerFound ? purchase.buyer_phone : payerPhone;
+        await createOrFindCustomer(buyerEmail, buyerFirstName, buyerLastName, buyerPhone);
+
+        res.json({
+            success: true,
             message: customerFound ? 'שובר נוצר ונשלח ללקוח' : 'שובר נוצר (ללא לקוח מזוהה)',
             voucherNumber: voucherNumber,
             customerFound: customerFound,
@@ -739,6 +781,9 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
                 console.error('Error sending email to recipient:', emailError);
             }
         }
+
+        // Create or find customer account for the buyer
+        await createOrFindCustomer(purchase.buyer_email, purchase.buyer_first_name, purchase.buyer_last_name, purchase.buyer_phone);
 
         res.json({ success: true, voucher, voucherNumber: purchase.voucher_number });
 

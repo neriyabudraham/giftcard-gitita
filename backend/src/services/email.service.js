@@ -337,9 +337,156 @@ async function sendUnmatchedVoucherNotification(data) {
     }
 }
 
+async function sendCustomerCredentialsEmail(to, name, email, tempPassword) {
+    const loginUrl = `${process.env.FRONTEND_URL || 'https://giftcard-gitita.botomat.co.il'}/portal`;
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
+        to,
+        subject: 'פרטי גישה לאזור האישי - שפת המדבר',
+        html: `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+h1 { color: #6B7D4F; text-align: center; }
+.content { line-height: 1.8; color: #333; }
+.credentials { background: #f0fdf4; border-radius: 10px; padding: 20px; margin: 20px 0; border-right: 4px solid #8B9D6F; }
+.credentials p { margin: 8px 0; font-size: 1.1rem; }
+.button { display: block; width: 200px; margin: 30px auto; padding: 15px 30px; background: linear-gradient(135deg, #8B9D6F 0%, #6B7D4F 100%); color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; }
+.note { background: #fff3cd; border-radius: 10px; padding: 15px; margin: 20px 0; color: #856404; }
+.footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9rem; }
+</style></head>
+<body>
+<div class="container">
+    <h1>ברוכים הבאים לאזור האישי!</h1>
+    <div class="content">
+        <p>שלום ${name || 'לקוח יקר'},</p>
+        <p>תודה על רכישתך! נוצר עבורך חשבון אישי בו תוכל לצפות בכל השוברים שרכשת.</p>
+        <div class="credentials">
+            <p><strong>מייל:</strong> ${email}</p>
+            <p><strong>סיסמה זמנית:</strong> <span style="font-size:1.3rem;font-weight:bold;letter-spacing:2px;">${tempPassword}</span></p>
+        </div>
+        <div class="note">
+            <p><strong>שימו לב:</strong> בהתחברות הראשונה תתבקשו להגדיר סיסמה אישית.</p>
+        </div>
+        <a href="${loginUrl}" class="button">כניסה לאזור האישי</a>
+        <p>באזור האישי תוכלו:</p>
+        <ul>
+            <li>לצפות בכל השוברים שרכשתם</li>
+            <li>לעדכן את הברכה על השובר</li>
+            <li>להוריד עותק של השובר</li>
+            <li>לבצע רכישות נוספות בקלות</li>
+        </ul>
+        <p>בברכה,<br>צוות שפת המדבר</p>
+    </div>
+    <div class="footer"><p>© ${new Date().getFullYear()} שפת המדבר</p></div>
+</div>
+</body></html>`
+    };
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Customer credentials email sent to ${to}`);
+    } catch (error) {
+        console.error('Error sending customer credentials email:', error);
+    }
+}
+
+async function sendCustomerVerificationEmail(to, name, token) {
+    const verifyUrl = `${process.env.FRONTEND_URL || 'https://giftcard-gitita.botomat.co.il'}/portal?verify=${token}`;
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
+        to,
+        subject: 'אימות כתובת מייל - שפת המדבר',
+        html: `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+h1 { color: #6B7D4F; text-align: center; }
+.content { line-height: 1.8; color: #333; }
+.button { display: block; width: 220px; margin: 30px auto; padding: 15px 30px; background: linear-gradient(135deg, #8B9D6F 0%, #6B7D4F 100%); color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; }
+.warning { background: #fff3cd; border-radius: 10px; padding: 15px; margin: 20px 0; color: #856404; }
+.footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9rem; }
+</style></head>
+<body>
+<div class="container">
+    <h1>אימות כתובת מייל</h1>
+    <div class="content">
+        <p>שלום ${name || 'לקוח יקר'},</p>
+        <p>כמעט סיימנו! לחצו על הכפתור למטה לאימות כתובת המייל שלכם:</p>
+        <a href="${verifyUrl}" class="button">אמת את המייל שלי</a>
+        <div class="warning">
+            <p><strong>שימו לב:</strong> קישור זה תקף ל-24 שעות בלבד.</p>
+        </div>
+        <p>בברכה,<br>צוות שפת המדבר</p>
+    </div>
+    <div class="footer"><p>© ${new Date().getFullYear()} שפת המדבר</p></div>
+</div>
+</body></html>`
+    };
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Customer verification email sent to ${to}`);
+    } catch (error) {
+        console.error('Error sending customer verification email:', error);
+    }
+}
+
+async function sendCustomerPasswordResetEmail(to, name, token) {
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://giftcard-gitita.botomat.co.il'}/portal?reset=${token}`;
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"שפת המדבר" <office@neriyabudraham.co.il>',
+        to,
+        subject: 'איפוס סיסמה - אזור אישי שפת המדבר',
+        html: `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+h1 { color: #6B7D4F; text-align: center; }
+.content { line-height: 1.8; color: #333; }
+.button { display: block; width: 200px; margin: 30px auto; padding: 15px 30px; background: linear-gradient(135deg, #8B9D6F 0%, #6B7D4F 100%); color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; }
+.warning { background: #fff3cd; border-radius: 10px; padding: 15px; margin: 20px 0; color: #856404; }
+.footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9rem; }
+</style></head>
+<body>
+<div class="container">
+    <h1>איפוס סיסמה</h1>
+    <div class="content">
+        <p>שלום ${name || 'לקוח יקר'},</p>
+        <p>קיבלנו בקשה לאיפוס הסיסמה שלך באזור האישי של שפת המדבר.</p>
+        <a href="${resetUrl}" class="button">איפוס סיסמה</a>
+        <div class="warning">
+            <p><strong>שימו לב:</strong> קישור זה תקף לשעה אחת בלבד.</p>
+            <p>אם לא ביקשת לאפס את הסיסמה, ניתן להתעלם ממייל זה.</p>
+        </div>
+        <p>בברכה,<br>צוות שפת המדבר</p>
+    </div>
+    <div class="footer"><p>© ${new Date().getFullYear()} שפת המדבר</p></div>
+</div>
+</body></html>`
+    };
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Customer password reset email sent to ${to}`);
+    } catch (error) {
+        console.error('Error sending customer password reset email:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     sendVoucherEmail,
     sendPasswordResetEmail,
     sendAdminNotificationEmail,
-    sendUnmatchedVoucherNotification
+    sendUnmatchedVoucherNotification,
+    sendCustomerCredentialsEmail,
+    sendCustomerVerificationEmail,
+    sendCustomerPasswordResetEmail
 };

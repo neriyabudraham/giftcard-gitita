@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אזור אישי - שפת המדבר</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Assistant', sans-serif;
+            direction: rtl;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #f0f0f0;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+        /* Header */
+        .header {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .header-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .header-logo img { width: 44px; height: 44px; border-radius: 50%; }
+        .header-logo span { font-weight: 700; font-size: 1.1rem; color: #fff; }
+        .header-actions { display: flex; gap: 12px; align-items: center; }
+        .btn-logout {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #ccc;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: 'Assistant', sans-serif;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+        /* Auth Section */
+        .auth-section {
+            min-height: calc(100vh - 74px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .auth-card {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 460px;
+        }
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .auth-logo img {
+            width: 80px; height: 80px; border-radius: 50%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+        .auth-logo h1 { font-size: 1.5rem; font-weight: 700; margin-top: 12px; color: #fff; }
+        .auth-logo p { color: rgba(255,255,255,0.6); font-size: 0.95rem; }
+
+        .auth-tabs {
+            display: flex;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            transition: all 0.3s;
+        }
+        .auth-tab.active {
+            background: linear-gradient(135deg, #8B9D6F, #6B7D4F);
+            color: white;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: 'Assistant', sans-serif;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus { border-color: #8B9D6F; }
+        .form-input::placeholder { color: rgba(255,255,255,0.3); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .password-wrapper { position: relative; }
+        .password-toggle {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: rgba(255,255,255,0.4);
+            background: none;
+            border: none;
+            padding: 4px;
+            font-size: 1.1rem;
+        }
+        .password-toggle:hover { color: rgba(255,255,255,0.8); }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #8B9D6F 0%, #6B7D4F 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 8px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139,157,111,0.4); }
+        .btn-primary:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+        .auth-message { text-align: center; margin-top: 16px; }
+        .auth-message a { color: #8B9D6F; cursor: pointer; text-decoration: underline; }
+        .forgot-link { color: rgba(255,255,255,0.5); font-size: 0.85rem; cursor: pointer; text-align: left; display: block; margin-top: 4px; }
+        .forgot-link:hover { color: #8B9D6F; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+        .alert-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+        .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+        .alert-info { background: rgba(139,157,111,0.15); border: 1px solid rgba(139,157,111,0.3); color: #c8d9a8; }
+
+        /* Dashboard */
+        .dashboard { display: none; }
+        .dashboard-header {
+            background: rgba(0,0,0,0.2);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .dashboard-header h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+        .dashboard-header p { color: rgba(255,255,255,0.6); }
+
+        .dashboard-actions {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-action {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #8B9D6F, #6B7D4F);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-action:hover { transform: translateY(-2px); }
+        .btn-action.secondary {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 0 20px;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 14px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        .tab.active { color: #8B9D6F; border-bottom-color: #8B9D6F; }
+
+        .tab-content { padding: 24px 20px; display: none; }
+        .tab-content.active { display: block; }
+
+        /* Voucher Cards */
+        .voucher-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .voucher-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .voucher-number { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+        .voucher-amount { font-size: 1.4rem; font-weight: 700; color: #FFD700; }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-active { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+        .badge-pending { background: rgba(251,191,36,0.2); color: #fde68a; border: 1px solid rgba(251,191,36,0.3); }
+        .badge-used { background: rgba(156,163,175,0.2); color: #d1d5db; border: 1px solid rgba(156,163,175,0.3); }
+
+        .voucher-info { font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-bottom: 12px; line-height: 1.7; }
+        .voucher-info strong { color: rgba(255,255,255,0.85); }
+
+        .voucher-greeting {
+            background: rgba(139,157,111,0.1);
+            border: 1px solid rgba(139,157,111,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.75);
+            font-style: italic;
+        }
+
+        .voucher-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-sm {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+        }
+        .btn-sm:hover { transform: translateY(-1px); }
+        .btn-edit { background: rgba(139,157,111,0.2); color: #c8d9a8; border: 1px solid rgba(139,157,111,0.3) !important; }
+        .btn-download { background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3) !important; }
+
+        /* Edit Greeting Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 480px;
+        }
+        .modal h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .btn-cancel-modal {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Assistant', sans-serif;
+            font-size: 0.95rem;
+        }
+        .btn-save-modal {
+            flex: 2;
+            padding: 12px;
+            background: linear-gradient(135deg, #8B9D6F, #6B7D4F);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Assistant', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: 'Assistant', sans-serif;
+            resize: vertical;
+            min-height: 100px;
+            outline: none;
+        }
+        .form-textarea:focus { border-color: #8B9D6F; }
+
+        /* First Login */
+        .first-login-banner {
+            background: linear-gradient(135deg, rgba(139,157,111,0.2), rgba(107,125,79,0.2));
+            border: 1px solid rgba(139,157,111,0.4);
+            border-radius: 14px;
+            padding: 20px;
+            margin: 20px;
+            text-align: center;
+        }
+        .first-login-banner h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #c8d9a8; }
+        .first-login-banner p { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 14px; }
+
+        /* Purchases table */
+        .purchase-row {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .purchase-row-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .purchase-date { font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+        .purchase-info { font-size: 0.9rem; color: rgba(255,255,255,0.65); line-height: 1.7; }
+
+        /* Change Password */
+        .change-password-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255,255,255,0.4);
+        }
+        .empty-state svg { width: 50px; height: 50px; margin-bottom: 12px; opacity: 0.4; }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .auth-card { padding: 24px; }
+            .tab { padding: 12px 14px; font-size: 0.88rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <a href="/" class="header-logo">
+        <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר">
+        <span>שפת המדבר</span>
+    </a>
+    <div class="header-actions" id="headerActions">
+        <a href="/" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.9rem;">← לדף הבית</a>
+    </div>
+</header>
+
+<!-- Auth Section -->
+<div class="auth-section" id="authSection">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <img src="https://files.neriyabudraham.co.il/files/save_IMG_0392_20250916_xhwpe.jpg" alt="שפת המדבר">
+            <h1>אזור אישי</h1>
+            <p>כניסה לניהול השוברים שלך</p>
+        </div>
+
+        <div id="authAlert"></div>
+
+        <!-- Login/Register Tabs -->
+        <div class="auth-tabs" id="authTabs">
+            <div class="auth-tab active" onclick="switchAuthTab('login')">כניסה</div>
+            <div class="auth-tab" onclick="switchAuthTab('register')">הרשמה</div>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm">
+            <div class="form-group">
+                <label class="form-label">כתובת מייל</label>
+                <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">סיסמה</label>
+                <div class="password-wrapper">
+                    <input type="password" id="loginPassword" class="form-input" placeholder="הזן סיסמה" onkeydown="if(event.key==='Enter')doLogin()">
+                    <button class="password-toggle" onclick="togglePassword('loginPassword', this)" type="button">👁</button>
+                </div>
+                <span class="forgot-link" onclick="showForgotPassword()">שכחתי סיסמה</span>
+            </div>
+            <button class="btn-primary" onclick="doLogin()" id="loginBtn">כניסה</button>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" style="display:none">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">שם פרטי *</label>
+                    <input type="text" id="regFirstName" class="form-input" placeholder="שם פרטי">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">שם משפחה</label>
+                    <input type="text" id="regLastName" class="form-input" placeholder="שם משפחה">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">כתובת מייל *</label>
+                <input type="email" id="regEmail" class="form-input" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">טלפון</label>
+                <input type="tel" id="regPhone" class="form-input" placeholder="050-0000000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">סיסמה *</label>
+                <div class="password-wrapper">
+                    <input type="password" id="regPassword" class="form-input" placeholder="לפחות 6 תווים">
+                    <button class="password-toggle" onclick="togglePassword('regPassword', this)" type="button">👁</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">אימות סיסמה *</label>
+                <div class="password-wrapper">
+                    <input type="password" id="regPasswordConfirm" class="form-input" placeholder="הזן שוב את הסיסמה">
+                    <button class="password-toggle" onclick="togglePassword('regPasswordConfirm', this)" type="button">👁</button>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="doRegister()" id="registerBtn">הרשמה</button>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div id="forgotForm" style="display:none">
+            <p style="color:rgba(255,255,255,0.6);margin-bottom:16px;font-size:0.95rem;">הזן את כתובת המייל שלך ונשלח קישור לאיפוס הסיסמה:</p>
+            <div class="form-group">
+                <label class="form-label">כתובת מייל</label>
+                <input type="email" id="forgotEmail" class="form-input" placeholder="your@email.com">
+            </div>
+            <button class="btn-primary" onclick="doForgotPassword()" id="forgotBtn">שלח קישור איפוס</button>
+            <div class="auth-message" style="margin-top:12px">
+                <a onclick="showLoginForm()">חזרה להתחברות</a>
+            </div>
+        </div>
+
+        <!-- Reset Password Form (shown via URL token) -->
+        <div id="resetForm" style="display:none">
+            <p style="color:rgba(255,255,255,0.6);margin-bottom:16px;font-size:0.95rem;">הזן סיסמה חדשה:</p>
+            <div class="form-group">
+                <label class="form-label">סיסמה חדשה</label>
+                <div class="password-wrapper">
+                    <input type="password" id="resetPassword" class="form-input" placeholder="לפחות 6 תווים">
+                    <button class="password-toggle" onclick="togglePassword('resetPassword', this)" type="button">👁</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">אימות סיסמה</label>
+                <div class="password-wrapper">
+                    <input type="password" id="resetPasswordConfirm" class="form-input" placeholder="הזן שוב">
+                    <button class="password-toggle" onclick="togglePassword('resetPasswordConfirm', this)" type="button">👁</button>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="doResetPassword()" id="resetBtn">עדכן סיסמה</button>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+    <!-- First Login Password Change Banner -->
+    <div class="first-login-banner" id="firstLoginBanner" style="display:none">
+        <h3>ברוכים הבאים! הגדר סיסמה אישית</h3>
+        <p>בכניסה הראשונה יש להגדיר סיסמה אישית לחשבונך</p>
+        <button class="btn-action" onclick="switchTab('settings')">הגדר סיסמה עכשיו</button>
+    </div>
+
+    <div class="dashboard-header">
+        <h2 id="dashboardGreeting">שלום!</h2>
+        <p id="dashboardEmail"></p>
+    </div>
+
+    <div class="dashboard-actions">
+        <button class="btn-action" onclick="newPurchase()">רכישה חדשה</button>
+        <button class="btn-action secondary" onclick="loadVouchers()">רענן שוברים</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('vouchers')" id="tab-vouchers">השוברים שלי</div>
+        <div class="tab" onclick="switchTab('purchases')" id="tab-purchases">הרכישות שלי</div>
+        <div class="tab" onclick="switchTab('settings')" id="tab-settings">הגדרות</div>
+    </div>
+
+    <!-- Vouchers Tab -->
+    <div class="tab-content active" id="content-vouchers">
+        <div id="vouchersList">
+            <p style="text-align:center;color:rgba(255,255,255,0.4)">טוען שוברים...</p>
+        </div>
+    </div>
+
+    <!-- Purchases Tab -->
+    <div class="tab-content" id="content-purchases">
+        <div id="purchasesList">
+            <p style="text-align:center;color:rgba(255,255,255,0.4)">טוען רכישות...</p>
+        </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="content-settings">
+        <div id="settingsAlert"></div>
+        <div class="change-password-card" id="changePasswordCard">
+            <h3 style="margin-bottom:20px;font-size:1.1rem;font-weight:700;">שינוי סיסמה</h3>
+            <div id="currentPasswordGroup" class="form-group">
+                <label class="form-label">סיסמה נוכחית</label>
+                <div class="password-wrapper">
+                    <input type="password" id="currentPassword" class="form-input" placeholder="הזן סיסמה נוכחית">
+                    <button class="password-toggle" onclick="togglePassword('currentPassword', this)" type="button">👁</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">סיסמה חדשה</label>
+                <div class="password-wrapper">
+                    <input type="password" id="newPassword" class="form-input" placeholder="לפחות 6 תווים">
+                    <button class="password-toggle" onclick="togglePassword('newPassword', this)" type="button">👁</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">אימות סיסמה חדשה</label>
+                <div class="password-wrapper">
+                    <input type="password" id="newPasswordConfirm" class="form-input" placeholder="הזן שוב">
+                    <button class="password-toggle" onclick="togglePassword('newPasswordConfirm', this)" type="button">👁</button>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="doChangePassword()" id="changePasswordBtn">עדכן סיסמה</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Greeting Modal -->
+<div class="modal-overlay" id="greetingModal">
+    <div class="modal">
+        <h3>עריכת ברכה</h3>
+        <div class="form-group">
+            <label class="form-label">ברכה לשובר</label>
+            <textarea class="form-textarea" id="greetingInput" placeholder="כתב כאן את הברכה..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel-modal" onclick="closeGreetingModal()">ביטול</button>
+            <button class="btn-save-modal" onclick="saveGreeting()">שמור ברכה</button>
+            <button class="btn-save-modal" style="background:linear-gradient(135deg,#3b82f6,#2563eb)" onclick="saveAndDownload()">שמור + הורד שובר</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '/api';
+    let token = localStorage.getItem('customerToken');
+    let currentCustomer = null;
+    let editingVoucherNumber = null;
+
+    // Check URL params on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const verifyToken = urlParams.get('verify');
+    const resetToken = urlParams.get('reset');
+
+    async function init() {
+        if (verifyToken) {
+            await handleEmailVerify();
+            return;
+        }
+        if (resetToken) {
+            showResetForm();
+            return;
+        }
+        if (token) {
+            await loadDashboard();
+        }
+    }
+
+    async function handleEmailVerify() {
+        try {
+            const res = await fetch(`${API}/customer/verify/${verifyToken}`);
+            const data = await res.json();
+            showAuthAlert(data.error ? 'error' : 'success', data.message);
+            if (!data.error) {
+                switchAuthTab('login');
+            }
+        } catch {
+            showAuthAlert('error', 'שגיאה באימות');
+        }
+    }
+
+    function showResetForm() {
+        document.getElementById('authTabs').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('resetForm').style.display = 'block';
+    }
+
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            btn.textContent = '👁';
+        }
+    }
+
+    function switchAuthTab(tab) {
+        document.querySelectorAll('.auth-tab').forEach((t, i) => {
+            t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+        });
+        document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+        document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+        document.getElementById('forgotForm').style.display = 'none';
+        document.getElementById('authAlert').innerHTML = '';
+    }
+
+    function showForgotPassword() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('forgotForm').style.display = 'block';
+        document.getElementById('authTabs').style.display = 'none';
+        document.getElementById('authAlert').innerHTML = '';
+    }
+
+    function showLoginForm() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('forgotForm').style.display = 'none';
+        document.getElementById('authTabs').style.display = 'flex';
+    }
+
+    function showAuthAlert(type, message) {
+        document.getElementById('authAlert').innerHTML =
+            `<div class="alert alert-${type}">${message}</div>`;
+    }
+
+    function showSettingsAlert(type, message) {
+        document.getElementById('settingsAlert').innerHTML =
+            `<div class="alert alert-${type}">${message}</div>`;
+        setTimeout(() => document.getElementById('settingsAlert').innerHTML = '', 4000);
+    }
+
+    async function doLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) { showAuthAlert('error', 'יש למלא מייל וסיסמה'); return; }
+
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true; btn.textContent = 'מתחבר...';
+
+        try {
+            const res = await fetch(`${API}/customer/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (data.error) { showAuthAlert('error', data.message); return; }
+
+            token = data.token;
+            localStorage.setItem('customerToken', token);
+            currentCustomer = data.customer;
+            showDashboard();
+        } catch {
+            showAuthAlert('error', 'שגיאה בהתחברות');
+        } finally {
+            btn.disabled = false; btn.textContent = 'כניסה';
+        }
+    }
+
+    async function doRegister() {
+        const firstName = document.getElementById('regFirstName').value.trim();
+        const lastName = document.getElementById('regLastName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+
+        if (!firstName || !email || !password) { showAuthAlert('error', 'יש למלא שם פרטי, מייל וסיסמה'); return; }
+        if (password !== passwordConfirm) { showAuthAlert('error', 'הסיסמאות אינן תואמות'); return; }
+        if (password.length < 6) { showAuthAlert('error', 'הסיסמה חייבת להכיל לפחות 6 תווים'); return; }
+
+        const btn = document.getElementById('registerBtn');
+        btn.disabled = true; btn.textContent = 'נרשם...';
+
+        try {
+            const res = await fetch(`${API}/customer/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstName, lastName, email, phone, password })
+            });
+            const data = await res.json();
+            showAuthAlert(data.error ? 'error' : 'success', data.message);
+            if (!data.error) {
+                setTimeout(() => switchAuthTab('login'), 2000);
+            }
+        } catch {
+            showAuthAlert('error', 'שגיאה בהרשמה');
+        } finally {
+            btn.disabled = false; btn.textContent = 'הרשמה';
+        }
+    }
+
+    async function doForgotPassword() {
+        const email = document.getElementById('forgotEmail').value.trim();
+        if (!email) { showAuthAlert('error', 'יש להזין כתובת מייל'); return; }
+
+        const btn = document.getElementById('forgotBtn');
+        btn.disabled = true; btn.textContent = 'שולח...';
+
+        try {
+            const res = await fetch(`${API}/customer/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            showAuthAlert('success', data.message);
+        } catch {
+            showAuthAlert('error', 'שגיאה בשליחת קישור');
+        } finally {
+            btn.disabled = false; btn.textContent = 'שלח קישור איפוס';
+        }
+    }
+
+    async function doResetPassword() {
+        const password = document.getElementById('resetPassword').value;
+        const confirm = document.getElementById('resetPasswordConfirm').value;
+
+        if (!password || password.length < 6) { showAuthAlert('error', 'הסיסמה חייבת להכיל לפחות 6 תווים'); return; }
+        if (password !== confirm) { showAuthAlert('error', 'הסיסמאות אינן תואמות'); return; }
+
+        const btn = document.getElementById('resetBtn');
+        btn.disabled = true; btn.textContent = 'מעדכן...';
+
+        try {
+            const res = await fetch(`${API}/customer/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: resetToken, password })
+            });
+            const data = await res.json();
+            if (data.error) { showAuthAlert('error', data.message); return; }
+
+            token = data.token;
+            localStorage.setItem('customerToken', token);
+            currentCustomer = data.customer;
+            showAuthAlert('success', 'הסיסמה עודכנה בהצלחה!');
+            setTimeout(() => showDashboard(), 1000);
+        } catch {
+            showAuthAlert('error', 'שגיאה באיפוס סיסמה');
+        } finally {
+            btn.disabled = false; btn.textContent = 'עדכן סיסמה';
+        }
+    }
+
+    async function loadDashboard() {
+        try {
+            const res = await fetch(`${API}/customer/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                localStorage.removeItem('customerToken');
+                token = null;
+                return;
+            }
+            const data = await res.json();
+            currentCustomer = data.customer;
+            showDashboard();
+        } catch {
+            localStorage.removeItem('customerToken');
+            token = null;
+        }
+    }
+
+    function showDashboard() {
+        document.getElementById('authSection').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('headerActions').innerHTML = `
+            <span style="color:rgba(255,255,255,0.6);font-size:0.9rem;">${currentCustomer.email}</span>
+            <button class="btn-logout" onclick="doLogout()">יציאה</button>
+        `;
+        document.getElementById('dashboardGreeting').textContent = `שלום, ${currentCustomer.firstName}!`;
+        document.getElementById('dashboardEmail').textContent = currentCustomer.email;
+
+        if (currentCustomer.isFirstLogin) {
+            document.getElementById('firstLoginBanner').style.display = 'block';
+            document.getElementById('currentPasswordGroup').style.display = 'none';
+        }
+
+        loadVouchers();
+        loadPurchases();
+    }
+
+    function doLogout() {
+        localStorage.removeItem('customerToken');
+        token = null;
+        currentCustomer = null;
+        document.getElementById('authSection').style.display = 'flex';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('headerActions').innerHTML = `<a href="/" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.9rem;">← לדף הבית</a>`;
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        document.getElementById(`content-${tabName}`).classList.add('active');
+    }
+
+    async function loadVouchers() {
+        try {
+            const res = await fetch(`${API}/customer/vouchers`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            renderVouchers(data.vouchers || []);
+        } catch {
+            document.getElementById('vouchersList').innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4)">שגיאה בטעינת שוברים</p>';
+        }
+    }
+
+    function renderVouchers(vouchers) {
+        const el = document.getElementById('vouchersList');
+        if (!vouchers.length) {
+            el.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><p>אין שוברים עדיין</p></div>`;
+            return;
+        }
+        el.innerHTML = vouchers.map(v => {
+            const amount = v.product_name || (v.original_amount ? `₪${v.original_amount}` : '');
+            const statusMap = { active: ['badge-active', 'פעיל'], used: ['badge-used', 'נוצל'], expired: ['badge-used', 'פג תוקף'] };
+            const [badgeClass, badgeText] = statusMap[v.status] || ['badge-used', v.status];
+            const expiry = v.expiry_date ? new Date(v.expiry_date).toLocaleDateString('he-IL') : '';
+            const greeting = v.greeting || v.purchase_greeting || '';
+            return `
+            <div class="voucher-card">
+                <div class="voucher-card-header">
+                    <div>
+                        <div class="voucher-number">${v.voucher_number}</div>
+                        <div class="voucher-amount">${amount}</div>
+                    </div>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="voucher-info">
+                    ${v.recipient_name || v.customer_name ? `<strong>מקבל:</strong> ${v.recipient_name || v.customer_name}<br>` : ''}
+                    ${expiry ? `<strong>תוקף עד:</strong> ${expiry}<br>` : ''}
+                    ${v.remaining_amount && !v.product_name ? `<strong>יתרה:</strong> ₪${v.remaining_amount}` : ''}
+                </div>
+                ${greeting ? `<div class="voucher-greeting">"${greeting}"</div>` : ''}
+                <div class="voucher-actions">
+                    <button class="btn-sm btn-edit" onclick="openGreetingModal('${v.voucher_number}', \`${greeting.replace(/`/g, '\\`')}\`)">עריכת ברכה</button>
+                    <button class="btn-sm btn-download" onclick="downloadVoucher('${v.voucher_number}')">הורד שובר</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function loadPurchases() {
+        try {
+            const res = await fetch(`${API}/customer/purchases`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            renderPurchases(data.purchases || []);
+        } catch {
+            document.getElementById('purchasesList').innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4)">שגיאה בטעינת רכישות</p>';
+        }
+    }
+
+    function renderPurchases(purchases) {
+        const el = document.getElementById('purchasesList');
+        if (!purchases.length) {
+            el.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg><p>אין רכישות עדיין</p></div>`;
+            return;
+        }
+        const statusMap = { pending: ['badge-pending', 'ממתין לתשלום'], completed: ['badge-active', 'הושלם'], cancelled: ['badge-used', 'בוטל'] };
+        el.innerHTML = purchases.map(p => {
+            const [badgeClass, badgeText] = statusMap[p.status] || ['badge-used', p.status];
+            const date = new Date(p.created_at).toLocaleDateString('he-IL');
+            const amount = p.product_name || (p.amount ? `₪${p.amount}` : '');
+            const recipient = [p.recipient_first_name, p.recipient_last_name].filter(Boolean).join(' ');
+            return `
+            <div class="purchase-row">
+                <div class="purchase-row-header">
+                    <div>
+                        <div style="font-weight:700;">${amount}</div>
+                        <div class="purchase-date">${date}</div>
+                    </div>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="purchase-info">
+                    <strong>מספר שובר:</strong> ${p.voucher_number}<br>
+                    ${recipient ? `<strong>מקבל:</strong> ${recipient}<br>` : ''}
+                    ${p.greeting ? `<strong>ברכה:</strong> ${p.greeting}` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function openGreetingModal(voucherNumber, currentGreeting) {
+        editingVoucherNumber = voucherNumber;
+        document.getElementById('greetingInput').value = currentGreeting || '';
+        document.getElementById('greetingModal').classList.add('active');
+    }
+
+    function closeGreetingModal() {
+        document.getElementById('greetingModal').classList.remove('active');
+        editingVoucherNumber = null;
+    }
+
+    async function saveGreeting() {
+        if (!editingVoucherNumber) return;
+        const greeting = document.getElementById('greetingInput').value;
+        try {
+            const res = await fetch(`${API}/customer/vouchers/${editingVoucherNumber}/greeting`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ greeting })
+            });
+            const data = await res.json();
+            if (data.error) { alert(data.message); return; }
+            closeGreetingModal();
+            loadVouchers();
+        } catch {
+            alert('שגיאה בעדכון ברכה');
+        }
+    }
+
+    async function saveAndDownload() {
+        if (!editingVoucherNumber) return;
+        const greeting = document.getElementById('greetingInput').value;
+        try {
+            const res = await fetch(`${API}/customer/vouchers/${editingVoucherNumber}/greeting`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ greeting })
+            });
+            const data = await res.json();
+            if (data.error) { alert(data.message); return; }
+            closeGreetingModal();
+            loadVouchers();
+            downloadVoucher(editingVoucherNumber);
+        } catch {
+            alert('שגיאה');
+        }
+    }
+
+    function downloadVoucher(voucherNumber) {
+        const a = document.createElement('a');
+        a.href = `/api/voucher/${voucherNumber}/generate?force=true`;
+        a.download = `voucher-${voucherNumber}.png`;
+        a.click();
+    }
+
+    function newPurchase() {
+        if (currentCustomer) {
+            localStorage.setItem('buyerInfo', JSON.stringify({
+                firstName: currentCustomer.firstName,
+                lastName: currentCustomer.lastName,
+                email: currentCustomer.email,
+                phone: currentCustomer.phone || ''
+            }));
+        }
+        window.location.href = '/';
+    }
+
+    async function doChangePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const newPasswordConfirm = document.getElementById('newPasswordConfirm').value;
+
+        if (!newPassword || newPassword.length < 6) { showSettingsAlert('error', 'הסיסמה החדשה חייבת להכיל לפחות 6 תווים'); return; }
+        if (newPassword !== newPasswordConfirm) { showSettingsAlert('error', 'הסיסמאות אינן תואמות'); return; }
+
+        const btn = document.getElementById('changePasswordBtn');
+        btn.disabled = true; btn.textContent = 'מעדכן...';
+
+        try {
+            const res = await fetch(`${API}/customer/change-password`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const data = await res.json();
+            if (data.error) { showSettingsAlert('error', data.message); return; }
+
+            showSettingsAlert('success', 'הסיסמה עודכנה בהצלחה!');
+            currentCustomer.isFirstLogin = false;
+            document.getElementById('firstLoginBanner').style.display = 'none';
+            document.getElementById('currentPasswordGroup').style.display = 'block';
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newPasswordConfirm').value = '';
+        } catch {
+            showSettingsAlert('error', 'שגיאה בעדכון סיסמה');
+        } finally {
+            btn.disabled = false; btn.textContent = 'עדכן סיסמה';
+        }
+    }
+
+    // Init
+    init();
+</script>
+</body>
+</html>
