@@ -5,7 +5,8 @@ const HTML2PNG_URL = process.env.HTML2PNG_URL || 'https://html2png.botomat.co.il
 const VOUCHERS_DIR = path.join(__dirname, '../../vouchers');
 
 function generateVoucherHTML(data) {
-    const { voucherNumber, amount, recipientName, greeting, expiryDate } = data;
+    const { voucherId, voucherNumber: vNum, amount, recipientName, greeting, expiryDate } = data;
+    const voucherNumber = vNum || voucherId;
     
     // Check if amount is a product name (string) or numeric value
     const numAmount = parseFloat(amount);

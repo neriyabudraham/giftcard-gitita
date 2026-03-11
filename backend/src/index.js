@@ -13,8 +13,21 @@ const uploadRoutes = require('./routes/upload.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const leadsRoutes = require('./routes/leads.routes');
 
+const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Run DB migrations on startup
+async function runMigrations() {
+    try {
+        await db.query('ALTER TABLE purchases ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255)');
+        await db.query('ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255)');
+        console.log('DB migrations completed');
+    } catch (err) {
+        console.error('DB migration error:', err.message);
+    }
+}
+runMigrations();
 
 // Middleware
 app.use(cors({

@@ -309,9 +309,15 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">טלפון מקבל השובר *</label>
-                <input type="tel" name="recipientPhone" class="form-input" placeholder="050-000-0000" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">טלפון מקבל השובר *</label>
+                    <input type="tel" name="recipientPhone" class="form-input" placeholder="050-000-0000" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">אימייל מקבל השובר</label>
+                    <input type="email" name="recipientEmail" class="form-input" placeholder="example@email.com">
+                </div>
             </div>
 
             <div class="greeting-section">
@@ -407,6 +413,7 @@
                 recipientFirstName: formData.get('recipientFirstName'),
                 recipientLastName: formData.get('recipientLastName'),
                 recipientPhone: formData.get('recipientPhone'),
+                recipientEmail: formData.get('recipientEmail'),
                 greeting: formData.get('greeting')
             };
             

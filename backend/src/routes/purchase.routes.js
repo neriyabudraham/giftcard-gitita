@@ -19,12 +19,15 @@ router.post('/', async (req, res) => {
             buyerFirstName,
             buyerLastName,
             buyerPhone,
-            buyerEmail,
+            buyerEmail: rawBuyerEmail,
             recipientFirstName,
             recipientLastName,
             recipientPhone,
+            recipientEmail: rawRecipientEmail,
             greeting
         } = req.body;
+        const buyerEmail = rawBuyerEmail ? rawBuyerEmail.trim() : rawBuyerEmail;
+        const recipientEmail = rawRecipientEmail ? rawRecipientEmail.trim() : rawRecipientEmail;
 
         // Generate unique voucher number
         let voucherNumber = generateVoucherNumber();
@@ -41,13 +44,13 @@ router.post('/', async (req, res) => {
 
         // Save purchase
         const result = await db.query(
-            `INSERT INTO purchases 
+            `INSERT INTO purchases
              (voucher_number, amount, product_name, buyer_first_name, buyer_last_name, buyer_phone, buyer_email,
-              recipient_first_name, recipient_last_name, recipient_phone, greeting, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
+              recipient_first_name, recipient_last_name, recipient_phone, recipient_email, greeting, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending')
              RETURNING id`,
             [voucherNumber, amount, productName, buyerFirstName, buyerLastName, buyerPhone, buyerEmail,
-             recipientFirstName, recipientLastName, recipientPhone, greeting]
+             recipientFirstName, recipientLastName, recipientPhone, recipientEmail, greeting]
         );
 
         const purchaseId = result.rows[0].id;
@@ -415,6 +418,27 @@ router.post('/webhook', async (req, res) => {
                 console.log('Email sent to customer:', purchase.buyer_email);
             } catch (emailError) {
                 console.error('Error sending email:', emailError);
+            }
+
+            // Send email to recipient (if they have an email)
+            if (purchase.recipient_email) {
+                try {
+                    await emailService.sendVoucherEmail({
+                        to: purchase.recipient_email,
+                        buyerName: `${purchase.buyer_first_name} ${purchase.buyer_last_name}`,
+                        voucherNumber: voucherNumber,
+                        amount: voucherDisplayAmount,
+                        voucherId: voucherNumber,
+                        recipientName: `${purchase.recipient_first_name} ${purchase.recipient_last_name}`,
+                        greeting: purchase.greeting,
+                        expiryDate: expiryDate,
+                        imageBuffer,
+                        isBuyerCopy: false
+                    });
+                    console.log('Email sent to recipient:', purchase.recipient_email);
+                } catch (recipientEmailError) {
+                    console.error('Error sending email to recipient:', recipientEmailError);
+                }
             }
 
             // Send admin notification to all users who should receive notifications

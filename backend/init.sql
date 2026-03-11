@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS vouchers (
 -- Add product_name column if not exists (for migration)
 ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS product_name VARCHAR(255);
 
+-- Add recipient_email column if not exists (for migration)
+ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255);
+
 -- Purchases table
 CREATE TABLE IF NOT EXISTS purchases (
     id SERIAL PRIMARY KEY,
@@ -69,6 +72,9 @@ CREATE TABLE IF NOT EXISTS purchases (
 
 -- Add product_name column if not exists (for migration)
 ALTER TABLE purchases ADD COLUMN IF NOT EXISTS product_name VARCHAR(255);
+
+-- Add recipient_email column if not exists (for migration)
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(255);
 
 -- Voucher usage history
 CREATE TABLE IF NOT EXISTS voucher_usage (
