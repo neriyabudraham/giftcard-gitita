@@ -222,11 +222,10 @@ function generateVoucherHTML(data) {
             overflow-wrap: break-word;
             font-weight: 400;
             flex: 1;
-            display: flex;
-            align-items: center;
+            display: block;
             padding: 10px 0;
-            text-align: justify;
-            hyphens: auto;
+            text-align: right;
+            line-height: 1.7;
         }
         
         .details-header {
