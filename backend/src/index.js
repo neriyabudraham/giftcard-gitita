@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
 const authRoutes = require('./routes/auth.routes');
 const usersRoutes = require('./routes/users.routes');
@@ -62,22 +63,42 @@ const adminPath = path.join(__dirname, '../public/admin');
 const publicPath = path.join(__dirname, '../public');
 const fs = require('fs');
 
-// Serve admin files without .html extension
+// Admin middleware: auth guard + clean URL support
+const PUBLIC_ADMIN_PATHS = new Set(['/login', '/create-password', '/reset-password']);
+
 app.use('/admin', (req, res, next) => {
     let filePath = req.path;
 
-    // Remove trailing slash
+    // Normalize trailing slash
     if (filePath.endsWith('/') && filePath !== '/') {
         filePath = filePath.slice(0, -1);
     }
 
-    // Check if it's a directory or file without extension
-    const fullPath = path.join(adminPath, filePath);
-    const htmlPath = fullPath + '.html';
+    const hasExtension = !!path.extname(filePath);
 
-    // If no extension and .html file exists, serve it
-    if (!path.extname(filePath) && fs.existsSync(htmlPath)) {
-        return res.sendFile(htmlPath);
+    // Server-side auth check for HTML pages (not static assets, not public pages)
+    if (!hasExtension && !PUBLIC_ADMIN_PATHS.has(filePath)) {
+        const token = req.cookies?.token;
+        let authenticated = false;
+        if (token) {
+            try {
+                const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+                jwt.verify(token, secret);
+                authenticated = true;
+            } catch {}
+        }
+        if (!authenticated) {
+            return res.redirect('/admin/login');
+        }
+    }
+
+    // Serve clean URLs: /admin/foo → /admin/foo.html
+    if (!hasExtension) {
+        const htmlFile = filePath === '/' ? 'index.html' : filePath.slice(1) + '.html';
+        const fullHtmlPath = path.join(adminPath, htmlFile);
+        if (fs.existsSync(fullHtmlPath)) {
+            return res.sendFile(fullHtmlPath);
+        }
     }
 
     next();
