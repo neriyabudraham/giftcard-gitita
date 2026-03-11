@@ -439,6 +439,7 @@
                 if (result.success && result.paymentUrl) {
                     localStorage.setItem('purchaseId', result.purchaseId);
                     localStorage.setItem('voucherNumber', result.voucherNumber);
+                    localStorage.setItem('buyerEmail', data.buyerEmail || '');
                     document.getElementById('paymentIframe').src = result.paymentUrl;
                     document.getElementById('paymentModal').classList.remove('hidden');
                 } else {

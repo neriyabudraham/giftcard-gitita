@@ -291,10 +291,25 @@
                     </svg>
                     הורדת השובר
                 </button>
+                <a href="/portal" class="btn btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    לאזור האישי
+                </a>
                 <a href="/" class="btn btn-secondary">חזרה לדף הבית</a>
             </div>
-            
-            <p class="info-text">השובר נשלח גם לכתובת המייל שהזנת</p>
+
+            <div id="portalInfoBox" style="margin-top:28px;background:rgba(139,157,111,0.12);border:1px solid rgba(139,157,111,0.3);border-radius:16px;padding:20px;text-align:right;">
+                <p style="font-size:1rem;font-weight:600;color:#c8d9a8;margin-bottom:8px;">פרטי גישה לאזור האישי נשלחו למייל</p>
+                <p id="portalEmailInfo" style="font-size:0.95rem;color:rgba(255,255,255,0.65);line-height:1.7;"></p>
+                <p style="font-size:0.9rem;color:rgba(255,255,255,0.45);margin-top:8px;">
+                    לא קיבלתם מייל? בדקו בספאם, או
+                    <a href="/portal" style="color:#8B9D6F;text-decoration:underline;">היכנסו לאזור האישי</a>
+                    ולחצו על "שכחתי סיסמה".
+                </p>
+            </div>
         </div>
         
         <!-- No Voucher State -->
@@ -319,6 +334,7 @@
         const API = '/api';
         const urlParams = new URLSearchParams(window.location.search);
         const voucherNumber = urlParams.get('voucher') || localStorage.getItem('voucherNumber');
+        const buyerEmail = localStorage.getItem('buyerEmail') || '';
         
         let checkAttempts = 0;
         const maxAttempts = 60; // 5 minutes (every 5 seconds)
@@ -371,11 +387,23 @@
             
             // Store for download
             window.currentVoucher = voucher;
-            
+
+            // Show portal info box with buyer email
+            const emailForDisplay = buyerEmail || voucher.buyer_email || '';
+            if (emailForDisplay) {
+                document.getElementById('portalEmailInfo').innerHTML =
+                    `פרטי גישה לאזור האישי נשלחו לכתובת <strong style="color:#c8d9a8">${emailForDisplay}</strong>.<br>
+                     באזור האישי תוכלו לצפות בכל השוברים שרכשתם ולעדכן ברכות.`;
+            } else {
+                document.getElementById('portalEmailInfo').textContent =
+                    'פרטי גישה לאזור האישי נשלחו לכתובת המייל שהזנתם.';
+            }
+
             // Clear localStorage
             localStorage.removeItem('purchaseId');
             localStorage.removeItem('voucherNumber');
             localStorage.removeItem('selectedVoucher');
+            localStorage.removeItem('buyerEmail');
         }
         
         async function downloadVoucher() {

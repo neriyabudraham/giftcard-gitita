@@ -30,9 +30,9 @@ function generateVoucherHTML(data) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>שובר מתנה - שפת המדבר</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Assistant:wght@300;400;500;600;700&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Varela+Round&family=Assistant:wght@300;400;500;600;700&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
@@ -40,7 +40,7 @@ function generateVoucherHTML(data) {
         }
         
         body {
-            font-family: 'Assistant', Arial, sans-serif;
+            font-family: 'Assistant', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Twemoji Mozilla', Arial, sans-serif;
             background: white;
             min-height: 100vh;
             display: flex;
@@ -351,6 +351,12 @@ ${formattedGreeting}
             document.fonts.ready.then(function() {
                 setTimeout(adjustGreetingTextSize, 50);
             });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
+    <script>
+        if (typeof twemoji !== 'undefined') {
+            twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
         }
     </script>
 </body>
